@@ -11,17 +11,21 @@ body {
 
 /* Navigation bar */
 nav {
-    background: linear-gradient(var(--base-dark), var(--base));
+    /* background: white; */
+    background: var(--base-light);
     padding: 0em 2em;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    color: #67bf79;
 }
 
-nav .logo {
-    color: white;
+nav > img {
+    /* color: white; */
     font-size: 1.5em;
     font-weight: bold;
+    width: 1em;
+    height: 1em;
 }
 
 nav a {
