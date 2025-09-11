@@ -1,2 +1,2 @@
 // @ts-check
-///<reference lib="es2024" />
+/// <reference lib="es2024" />
