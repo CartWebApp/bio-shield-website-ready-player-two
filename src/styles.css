@@ -46,7 +46,7 @@ nav span a {
 .hero {
     background: url('https://via.placeholder.com/1600x500') center/cover
         no-repeat;
-    color: white;
+    /* color: rgb(255, 255, 255); */
     text-align: center;
     padding: 6em 2em;
 }
