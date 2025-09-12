@@ -2,16 +2,25 @@
     --base: #67bf79;
     --base-dark: #57a66a;
     --base-light: #a3e4b0;
+    --base-darker: #3d8b4f;
+    --base-lighter: #c8f2d2;
 }
 
 body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
+    /* background: black; */
+    background: #111;
+    color: white;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 /* Navigation bar */
 nav {
-    background: var(--base-light);
+    /* background: var(--base-light) */
+    background: #222;
     padding: 0em 2em;
     display: flex;
     justify-content: space-between;
@@ -38,7 +47,7 @@ nav span a {
     padding: 1em;
     margin: 0;
     &:hover {
-        background: var(--base-dark);
+        color: var(--base);
     }
 }
 
@@ -64,9 +73,22 @@ nav span a {
 
 /* Mission statement */
 .mission {
-    padding: 3em 2em;
-    background-color: #f4f4f4;
+    padding: 1em 2em 2em 2em;
+    background-color: #111;
     text-align: center;
+    animation: pulsate 2s infinite;
+    max-width: 50vw;
+    margin: 0 auto;
+    clip-path: inset(-25vw, 0, -25vw, 0);
+}
+
+@keyframes pulsate {
+    0%, 100% {
+        box-shadow: var(--base-dark) 0em 0em 9em 0em;
+    }
+    25%, 75% {
+        box-shadow: var(--base) 0em 0em 9em 0em;
+    }
 }
 
 .mission h2 {
