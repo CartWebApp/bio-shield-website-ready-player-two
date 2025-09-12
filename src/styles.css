@@ -11,7 +11,6 @@ body {
 
 /* Navigation bar */
 nav {
-    /* background: white; */
     background: var(--base-light);
     padding: 0em 2em;
     display: flex;
@@ -21,14 +20,17 @@ nav {
 }
 
 nav > img {
-    /* color: white; */
     font-size: 1.5em;
     font-weight: bold;
-    width: 1em;
-    height: 1em;
+    width: 5em;
+    height: 2em;
 }
 
-nav a {
+nav span {
+    display: flex;
+    align-content: flex-end;
+}
+nav span a {
     color: white;
     text-decoration: none;
     font-weight: 500;
@@ -36,8 +38,7 @@ nav a {
     padding: 1em;
     margin: 0;
     &:hover {
-        /* color: var(--base-light); */
-        background: var(--base-light);
+        background: var(--base-dark);
     }
 }
 
