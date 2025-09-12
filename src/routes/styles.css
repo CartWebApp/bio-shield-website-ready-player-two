@@ -10,7 +10,9 @@ body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
     /* background: black; */
-    background: #111;
+    /* background: #111; */
+    background: url('./static/hero.2k.png') no-repeat center/cover;
+    background-position-y: 2em;
     color: white;
     align-items: center;
     justify-content: center;
@@ -53,11 +55,10 @@ nav span a {
 
 /* Hero section */
 .hero {
-    background: url('https://via.placeholder.com/1600x500') center/cover
-        no-repeat;
     /* color: rgb(255, 255, 255); */
     text-align: center;
     padding: 6em 2em;
+    text-shadow: black 0em 0em 0.2em;
 }
 
 .hero h1 {
