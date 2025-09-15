@@ -84,10 +84,23 @@ async function init() {
     const promises = [...dependencies].map(([url, dependents]) =>
         prefetch(url, dependents)
     );
-    await Promise.allSettled(promises);
+    // (() => {
+    //     const body = document.body;
+    //     console.log(getComputedStyle(body).backgroundImage);
+    //     // body.style.backgroundImage = 'url(\'/static/hero.4k.jpg\')';
+    // })();
+    Promise.allSettled(promises);
+    console.log('hi');
+    const body = document.body;
+    preload('/static/hero.4k.jpg').then(() => {
+        console.log('loaded 4k image');
+        body.style.backgroundImage = "url('/static/hero.4k.jpg')";
+    });
 }
 
-add_event_listener.call(document, 'DOMConentLoaded', init);
+// add_event_listener.call(document, 'DOMConentLoaded', init);
+await init();
+export {};
 add_event_listener.call(
     document,
     'DOMContentLoaded',
@@ -99,3 +112,85 @@ add_event_listener.call(
     },
     { once: true }
 );
+/** @type {IDBDatabase} */
+let db;
+const db_request = indexedDB.open('cached images', 3);
+
+db_request.onsuccess = () => {
+    db = db_request.result;
+};
+/**
+ * @param {string} src
+ */
+function preload(src) {
+    /** @param {string} input */
+    async function compress_and_encode_text(input) {
+        const reader = new Blob([input])
+            .stream()
+            .pipeThrough(new CompressionStream('gzip'))
+            .getReader();
+        let buffer = '';
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) {
+                reader.releaseLock();
+                // Some sites like discord don't like it when links end with =
+                return btoa(buffer)
+                    .replaceAll('+', '-')
+                    .replaceAll('/', '_')
+                    .replace(/=+$/, '');
+            } else {
+                for (let i = 0; i < value.length; i++) {
+                    // decoding as utf-8 will make btoa reject the string
+                    buffer += String.fromCharCode(value[i]);
+                }
+            }
+        }
+    }
+
+    /** @param {string} input */
+    async function decode_and_decompress_text(input) {
+        const decoded = atob(input.replaceAll('-', '+').replaceAll('_', '/'));
+        // putting it directly into the blob gives a corrupted file
+        const u8 = new Uint8Array(decoded.length);
+        for (let i = 0; i < decoded.length; i++) {
+            u8[i] = decoded.charCodeAt(i);
+        }
+        const stream = new Blob([u8])
+            .stream()
+            .pipeThrough(new DecompressionStream('gzip'));
+        return new Response(stream).text();
+    }
+    return new Promise((f, r) => {
+        const image = new Image();
+        image.onload = () => f(src);
+        image.onerror = r;
+        if (localStorage[src]) {
+            decode_and_decompress_text(localStorage[src]).then(res => {
+                f(res);
+            });
+        } else {
+            to_data_url(src).then(res => {
+                image.src = res;
+                compress_and_encode_text(res).then(res => {
+                    console.log(res);
+                    localStorage[src] = res;
+                });
+            });
+        }
+    });
+}
+
+/**
+ * @param {string} url
+ * @returns {Promise<string>}
+ */
+async function to_data_url(url) {
+    let blob = await fetch(url).then(r => r.blob());
+
+    return await new Promise(resolve => {
+        let reader = new FileReader();
+        reader.onload = () => resolve(/** @type {string} */ (reader.result));
+        reader.readAsDataURL(blob);
+    });
+}

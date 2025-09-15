@@ -1,10 +1,14 @@
 {
     "compilerOptions": {
-        "strict": true,
-        "target": "esnext",
-        "allowJs": true,
+        "target": "ES2024",
         "checkJs": true,
+        "allowJs": true,
+        "strict": true,
+        "moduleResolution": "nodenext",
+        "module": "nodenext",
+        "resolveJsonModule": true,
         "noEmit": true
     },
-    "include": ["*.js", "**/*.js"]
+    "include": ["*", "*/*"],
+    "exclude": []
 }
