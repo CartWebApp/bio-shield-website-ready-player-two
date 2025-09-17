@@ -21,9 +21,12 @@
     "homepage": "https://github.com/CartWebApp/bio-shield-website-ready-player-two#readme",
     "dependencies": {
         "@types/express": "^5.0.3",
-        "@types/node": "^24.3.2",
+        "@types/node": "^24.5.1",
+        "devalue": "^5.3.2",
         "esm-env": "^1.2.2",
-        "express": "^5.1.0"
+        "express": "^5.1.0",
+        "html-tags": "^5.1.0",
+        "zimmerframe": "^1.1.4"
     },
     "devDependencies": {
         "chokidar": "^4.0.3"

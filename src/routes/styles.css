@@ -27,7 +27,8 @@ nav {
     justify-content: space-between;
     align-items: center;
     color: #67bf79;
-    border-bottom: 0.05em #555 solid;
+    /* border-bottom: 0.05em #555 solid; */
+    box-shadow: 0em 0em 2px 0px var(--base-darker);
 }
 
 nav a img {
@@ -84,7 +85,8 @@ nav span a:not(:has(img)) {
 }
 
 /* Mission statement */
-.mission {
+.mission,
+.shop {
     padding: 1em 2em 2em 2em;
     background-color: #111;
     text-align: center;
@@ -93,6 +95,29 @@ nav span a:not(:has(img)) {
     margin: 0 auto;
     clip-path: inset(-25vw, 0, -25vw, 0);
     border-radius: 0.5em;
+}
+
+.shop {
+    margin-top: 10vh;
+    max-width: 75vw;
+    & .products {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        & > h1 {
+            text-align: left;
+        }
+        & .product {
+            border-radius: 0.2em;
+            border: 0.05em solid white;
+            padding: 1em;
+            margin: 1em;
+            width: 10vw;
+            height: 10vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    }
 }
 
 @keyframes pulsate {

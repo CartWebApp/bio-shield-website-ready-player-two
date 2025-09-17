@@ -1,9 +1,6 @@
-const source = new EventSource(
-    `/events?path=${encodeURIComponent(location.pathname)}`
-);
-source.addEventListener('open', () => {
-    source.addEventListener('close', () => {
-        alert('hi');
-        // location.reload();
+fetch(`/events?path=${encodeURIComponent(location.pathname)}`)
+    .then(res => res.text())
+    .then(() => {
+        console.log('reloading');
+        location.reload();
     });
-});

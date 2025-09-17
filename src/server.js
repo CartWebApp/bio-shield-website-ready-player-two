@@ -1,28 +1,20 @@
 /** @import { Response } from 'express' */
-import { readFileSync, existsSync, statSync } from 'fs';
+/** @import { HtmlTags as HTMLTag } from 'html-tags' */
+import { readFileSync, existsSync, statSync, readdirSync } from 'fs';
 import { DEV } from 'esm-env';
 import express from 'express';
-const chokidar = DEV ? await import('chokidar') : null;
+import html_tags from 'html-tags';
+import { uneval } from 'devalue';
+const chokidar = DEV && (await import('chokidar'));
 
 const app = express();
 
-if (DEV && chokidar !== null) {
+if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
-    // it does this using Server-Sent Events
+    // it does this using a cheap copy of Server-Sent Events (since actual SSE wasn't working for me)
     // the client-side code for this can be found in `routes/dev.js`
     /** @type {Map<string, Array<Response>>} */
     const watchers = new Map();
-    chokidar.watch('./routes').on('change', _path => {
-        const path = _path.replace(/\\/g, '/');
-        const updates = watchers.get(path);
-        if (updates !== undefined) {
-            console.log(`updated ${path}`);
-            var update;
-            while ((update = updates.shift())) {
-                update.end();
-            }
-        }
-    });
     app.get('/events', (req, res) => {
         const _path = decodeURIComponent(
             /** @type {string} */ (req.query.path)
@@ -30,30 +22,36 @@ if (DEV && chokidar !== null) {
         const path = `routes${
             _path + (_path.charAt(_path.length - 1) === '/' ? '' : '/')
         }index.html`;
+
         if (!watchers.has(path)) {
             watchers.set(path, []);
+            chokidar.watch(`./${path}`).on('change', () => {
+                console.log(`updated ${path}`);
+                var update;
+                while ((update = arr.shift())) {
+                    update.write('_');
+                    update.end();
+                }
+            });
         }
         const arr = /** @type {Array<Response>} */ (watchers.get(path));
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders(); // flush the headers to establish SSE with client
+        res.writeHead(200, {
+            'cache-control': 'no-cache',
+            'access-control-allow-origin': '*',
+            Connection: 'keep-alive'
+        });
         arr.push(res);
     });
 }
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     const path = `./routes${req.path}`;
     if (existsSync(path)) {
         const stats = statSync(path);
         if (stats.isFile()) {
-            // console.log(path);
             res.contentType(`.${path.split('.').at(-1) ?? 'txt'}`);
             res.sendFile(path, { root: '.' });
         } else {
-            // res.sendFile(`${path}index.html`, { root: '.' });
-            // console.log(path);
             const template = readFileSync(
                 `${
                     path + (path.charAt(path.length - 1) === '/' ? '' : '/')
@@ -61,18 +59,34 @@ app.use((req, res, next) => {
                 'utf-8'
             );
             res.contentType('.html');
-            res.send(convert(template));
+            res.send(await convert(template, path));
         }
     }
-    // next();
-    // console.log('hi', path);
 });
 
 /**
  * @param {string} template
+ * @param {string} url
  */
-function convert(template) {
+async function convert(template, url) {
     const [title, ...lines] = template.split(/\r?\n/g);
+    const body = lines.join('\n');
+    /** @type {Record<string, Record<string, any>>} */
+    const context_injection = {};
+    let context_script = '';
+    const context = readdirSync(url).filter(path => statSync(`${url}/${path}`).isDirectory() && path.match(/^\(.+\)$/));
+    if (context.length > 0) {
+        for (const folder of context) {
+            for (const file of readdirSync(`${url}/${folder}`)) {
+                const module = await import(`${url}/${folder}/${file}`);
+                if (module?.default) {
+                    (context_injection[folder] ??= {})[file.slice(0, -3)] = module.default;
+                }
+            }
+            if (context_script.length === 0) context_script = 'const context = {};\n';
+            context_script += `context['${folder.slice(1, -1)}'] = ${uneval(context_injection[folder])};\n`;
+        }
+    }
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
@@ -89,7 +103,7 @@ function convert(template) {
                 ? `
         <script src="/dev.js"></script>`
                 : ''
-        }
+        }${context_script.length > 0 ? `<script>(function() {const empty = Symbol();globalThis.useContext = function useContext(key = empty) {\n${context_script};\nreturn key === empty ? context : context[key];\n}}())</script>` : ''}
         <link rel="preconnect" href="https://rsms.me/" />
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -109,7 +123,7 @@ function convert(template) {
                 <a href="/contact">Contact</a></span
             >
         </nav>
-        ${lines.join('\n')}
+        ${body}
     </body>
 </html>`;
 }
