@@ -1,4 +1,6 @@
 /** @import { Response } from 'express' */
+// this regex came from
+// https://github.com/sveltejs/svelte/blob/461642283285fdbe854a1dce5000cf4c882e566e/packages/svelte/src/compiler/phases/patterns.js#L17
 const regex_is_valid_identifier = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/;
 import {
     readFileSync,
@@ -10,7 +12,7 @@ import {
 import { DEV } from 'esm-env';
 import express from 'express';
 import { uneval } from 'devalue';
-import { join, parse } from 'path';
+import { parse, sep } from 'path';
 const chokidar = DEV && (await import('chokidar'));
 
 const app = express();
@@ -59,7 +61,7 @@ function params(path) {
     let child = path;
     let grandchild = path;
     let end = path.split('/');
-    let i = end.length - 1;
+    let i = end.length;
     /** @type {Record<string, string>} */
     const params = {};
     while (dir.length > 1) {
@@ -74,7 +76,7 @@ function params(path) {
         }
         const has_params = readdirSync(dir).find(
             folder =>
-                statSync(join(dir, folder)).isDirectory() &&
+                statSync(`${dir}/${folder}`).isDirectory() &&
                 /^\[.+\]$/.test(folder)
         );
         if (typeof has_params === 'string') {
@@ -93,11 +95,19 @@ function params(path) {
     }
     return {
         params,
-        end: join(...end),
+        end: end.join('/'),
         child,
         grandchild,
         dir
     };
+}
+
+for (const file of readdirSync('./routes', { recursive: true })) {
+    if (typeof file !== 'string') continue;
+    if (file.endsWith('index.html')) {
+        const dir = `./routes/${file.split(sep).slice(0, -1).join('/')}`;
+        writeFileSync(`${dir}/types.d.ts`, generate_types(dir));
+    }
 }
 
 /**
@@ -131,6 +141,24 @@ function generate_types(path) {
     type_declarations += '\t};\n';
     type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
     type_declarations += `\texport function useContext(): Context;\n`;
+    const params = [];
+    let dir = path;
+    while (dir.length > 0) {
+        const { base, dir: next } = parse(dir);
+        if (base.match(/^\[.+\]$/)) {
+            params.push(base.slice(1, -1));
+        }
+        dir = next;
+    }
+    type_declarations += `\tinterface Params {\n`;
+    for (const param of params) {
+        type_declarations += `\t\t${
+            regex_is_valid_identifier.test(param) ? param : `['${param}']`
+        }: string;\n`;
+    }
+    type_declarations += `\t};\n`;
+    type_declarations += `\texport function useParams<P extends keyof Params>(param: P): Params[P];\n`;
+    type_declarations += `\texport function useParams(): Params;\n`;
     type_declarations += '};';
     return type_declarations;
 }
@@ -143,32 +171,43 @@ app.use(async (req, res, next) => {
             res.contentType(`.${path.split('.').at(-1) ?? 'txt'}`);
             res.sendFile(path, { root: '.' });
         } else {
-            const template = readFileSync(
-                `${
-                    path + (path.charAt(path.length - 1) === '/' ? '' : '/')
-                }index.html`,
-                'utf-8'
-            );
+            const html_path = `${
+                path + (path.charAt(path.length - 1) === '/' ? '' : '/')
+            }index.html`;
+            const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
-            res.send(
-                await convert(
-                    template,
-                    `${
-                        path + (path.charAt(path.length - 1) === '/' ? '' : '/')
-                    }index.html`
-                )
-            );
+            res.send(await convert(template, html_path, {}));
         }
     } else {
         const parsed_params = params(path);
+        console.log(parsed_params.end);
+        if (existsSync(parsed_params.end)) {
+            const stats = statSync(parsed_params.end);
+            if (stats.isFile()) {
+                res.contentType(
+                    `.${parsed_params.end.split('.').at(-1) ?? 'txt'}`
+                );
+            } else {
+                const path = parsed_params.end;
+                const html_path = `${
+                    path + (path.charAt(path.length - 1) === '/' ? '' : '/')
+                }index.html`;
+                const template = readFileSync(html_path, 'utf-8');
+                res.contentType('.html');
+                res.send(
+                    await convert(template, html_path, parsed_params.params)
+                );
+            }
+        }
     }
 });
 
 /**
  * @param {string} template
  * @param {string} url
+ * @param {Record<string, string>} [params]
  */
-async function convert(template, url) {
+async function convert(template, url, params = {}) {
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
     /** @type {Record<string, Record<string, any>>} */
@@ -194,7 +233,6 @@ async function convert(template, url) {
             )}'] = ${uneval(context_injection[folder])};\n`;
         }
     }
-    writeFileSync(join(dir, 'types.d.ts'), generate_types(dir));
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
@@ -219,6 +257,10 @@ async function convert(template, url) {
                     const context = {};
 ${context_script}
                     return key === empty ? context : context[key];
+                };
+                globalThis.useParams = function useParams(param = empty) {
+                    const params = ${uneval(params)};
+                    return param === empty ? params : params[param];
                 };
             }());
         </script>
