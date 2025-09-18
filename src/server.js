@@ -13,6 +13,7 @@ import { DEV } from 'esm-env';
 import express from 'express';
 import { uneval } from 'devalue';
 import { parse, sep } from 'path';
+import kleur from 'kleur';
 const chokidar = DEV && (await import('chokidar'));
 
 const app = express();
@@ -27,14 +28,19 @@ if (chokidar) {
         const _path = decodeURIComponent(
             /** @type {string} */ (req.query.path)
         );
-        const path = `routes${
-            _path + (_path.charAt(_path.length - 1) === '/' ? '' : '/')
-        }index.html`;
+        const path = `routes/${_path}`;
 
         if (!watchers.has(path)) {
             watchers.set(path, []);
             chokidar.watch(`./${path}`).on('change', () => {
-                console.log(`updated ${path}`);
+                const time = new Date()
+                    .toLocaleTimeString('en-US', { hour12: false })
+                    .replace(/:[0-9]{2}$/, '');
+                console.log(
+                    `${kleur.bold(kleur.blue(time))} ${kleur.gray(
+                        'updated '
+                    )}${kleur.bold(path)}`
+                );
                 var update;
                 while ((update = arr.shift())) {
                     update.write('_');
@@ -66,8 +72,8 @@ if (chokidar) {
 function params(path) {
     let dir = path;
     let child = path;
-    let end = path.split('/');
-    let i = end.length;
+    const parts = path.split('/');
+    let i = parts.length;
     /** @type {Record<string, string>} */
     const params = {};
     while (dir.length > 1) {
@@ -89,7 +95,7 @@ function params(path) {
             params[param] = parse(child).base;
             child = dir;
             ({ dir } = parse(dir));
-            end[i--] = has_params;
+            parts[i--] = has_params;
         } else {
             child = dir;
             ({ dir } = parse(dir));
@@ -98,7 +104,7 @@ function params(path) {
     }
     return {
         params,
-        path: end.join('/')
+        path: parts.join('/')
     };
 }
 
@@ -180,11 +186,15 @@ app.use(async (req, res, next) => {
             }index.html`;
             const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
-            res.send(await transform(template, html_path, {}));
+            res.send(
+                await transform(template, html_path, {
+                    path: html_path,
+                    params: {}
+                })
+            );
         }
     } else {
         const parsed_params = params(path);
-        console.log(parsed_params.path);
         if (existsSync(parsed_params.path)) {
             const stats = statSync(parsed_params.path);
             if (stats.isFile()) {
@@ -198,46 +208,51 @@ app.use(async (req, res, next) => {
                 }index.html`;
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
-                res.send(
-                    await transform(template, html_path, parsed_params.params)
-                );
+                res.send(await transform(template, html_path, parsed_params));
             }
         }
     }
 });
 
 /**
- * Transforms the template to include `<head>` content and context/params injection.
- * @param {string} template
- * @param {string} url
- * @param {Record<string, string>} [params]
+ * @param {string} path
  */
-async function transform(template, url, params = {}) {
-    const [title, ...lines] = template.split(/\r?\n/g);
-    const body = lines.join('\n');
+async function gather_all_contexts(path) {
+    let dir = path;
     /** @type {Record<string, Record<string, any>>} */
-    const context_injection = {};
-    let context_script = '';
-    const dir = parse(url).dir;
-    const context = readdirSync(dir).filter(
-        path =>
-            statSync(`${dir}/${path}`).isDirectory() && path.match(/^\(.+\)$/)
-    );
-    if (context.length > 0) {
-        for (const folder of context) {
-            for (const file of readdirSync(`${dir}/${folder}`)) {
-                const module = await import(`${dir}/${folder}/${file}`);
+    const context = {};
+    while (dir.length > 1) {
+        ({ dir } = parse(dir));
+        const contexts = readdirSync(dir).filter(
+            path =>
+                statSync(`${dir}/${path}`).isDirectory() &&
+                path.match(/^\(.+\)$/)
+        );
+        for (const folder of contexts) {
+            const path = `${dir}/${folder}`;
+            for (const file of readdirSync(path)) {
+                const module = await import(`${path}/${file}`);
                 if (module?.default) {
-                    (context_injection[folder] ??= {})[file.slice(0, -3)] =
+                    (context[folder.slice(1, -1)] ??= {})[file.slice(0, -3)] =
                         module.default;
                 }
             }
-            context_script += `\t\t\t\t\tcontext['${folder.slice(
-                1,
-                -1
-            )}'] = ${uneval(context_injection[folder])};\n`;
         }
     }
+    return context;
+}
+
+/**
+ * Transforms the template to include `<head>` content and context/params injection.
+ * @param {string} template
+ * @param {string} url
+ * @param {ReturnType<typeof params>} [params]
+ */
+async function transform(template, url, params = { path: '', params: {} }) {
+    const [title, ...lines] = template.split(/\r?\n/g);
+    const body = lines.join('\n');
+    const dir = parse(url).dir;
+    const context = await gather_all_contexts(dir);
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
@@ -252,19 +267,27 @@ async function transform(template, url, params = {}) {
         <script src="/script.js" type="module"></script>${
             DEV
                 ? `
-        <script src="/dev.js"></script>`
+        <script>
+            fetch(\`/events?path=${encodeURIComponent(
+                params.path.replace(/^\.\/routes\//, '')
+            )}\`)
+                .then(res => res.text())
+                .then(() => {
+                    console.log('reloading');
+                    location.reload();
+                });
+        </script>`
                 : ''
         }
         <script>
             (function() {
                 const empty = Symbol();
                 globalThis.useContext = function useContext(key = empty) {
-                    const context = {};
-${context_script}
+                    const context = ${uneval(context)};
                     return key === empty ? context : context[key];
                 };
                 globalThis.useParams = function useParams(param = empty) {
-                    const params = ${uneval(params)};
+                    const params = ${uneval(params.params)};
                     return param === empty ? params : params[param];
                 };
             }());
@@ -294,5 +317,9 @@ ${context_script}
 }
 
 app.listen(3000, () => {
-    console.log('Server running on http://localhost:3000');
+    console.log(
+        `${kleur.gray('Server running on ')}${kleur.green(
+            kleur.bold('http://localhost:3000')
+        )}`
+    );
 });

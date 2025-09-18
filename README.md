@@ -39,12 +39,14 @@ const { posts } = useContext();
 
 The exported context values must be serializable via `devalue`. This means they can be:
 
-- Plain Objects (POJOs) that may have circular references
-- Arrays
-- Primitives (numbers, strings, etc)
-- `Set`s and `Map`s
-- `Date`s
-- `RegExp`s
+-   Plain Objects (POJOs) that may have circular references
+-   Arrays
+-   Primitives (numbers, strings, etc)
+-   `Set`s and `Map`s
+-   `Date`s
+-   `RegExp`s
+
+> Context _cascades_, so if you have `shop/(products)`, `shop/checkout` can access `products` via `useContext`.
 
 ### Routing Parameters
 
@@ -67,7 +69,7 @@ const org = useParams('org'),
 
 ## Types
 
-To appease TypeScript, we generate ambient `d.ts` files on the fly for each route. This allows us to have typed `useContext` and (soon) `useParams`. You can use these type declarations via a [triple-slash directive](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html):
+To appease TypeScript, we generate ambient `d.ts` files on the fly for each route. This allows us to have typed `useContext` and `useParams`. You can use these type declarations via a [triple-slash directive](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html):
 
 ```js
 /// <reference path="./types.d.ts" />
