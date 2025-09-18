@@ -50,7 +50,55 @@ if (chokidar) {
     });
 }
 
-function params() {}
+/**
+ *
+ * @param {string} path
+ */
+function params(path) {
+    let dir = path;
+    let child = path;
+    let grandchild = path;
+    let end = path.split('/');
+    let i = end.length - 1;
+    /** @type {Record<string, string>} */
+    const params = {};
+    while (dir.length > 1) {
+        while (!existsSync(dir) && dir.length > 1) {
+            grandchild = child;
+            child = dir;
+            ({ dir } = parse(dir));
+            i--;
+        }
+        if (dir.length <= 1) {
+            break;
+        }
+        const has_params = readdirSync(dir).find(
+            folder =>
+                statSync(join(dir, folder)).isDirectory() &&
+                /^\[.+\]$/.test(folder)
+        );
+        if (typeof has_params === 'string') {
+            const param = has_params.slice(1, -1);
+            params[param] = parse(child).base;
+            grandchild = child;
+            child = dir;
+            ({ dir } = parse(dir));
+            end[i--] = has_params;
+        } else {
+            grandchild = child;
+            child = dir;
+            ({ dir } = parse(dir));
+            i--;
+        }
+    }
+    return {
+        params,
+        end: join(...end),
+        child,
+        grandchild,
+        dir
+    };
+}
 
 /**
  * we do some hacky string concatenation to generate the types for `useContext`.
@@ -111,6 +159,8 @@ app.use(async (req, res, next) => {
                 )
             );
         }
+    } else {
+        const parsed_params = params(path);
     }
 });
 
