@@ -125,31 +125,30 @@ generate_all_types();
  * @param {string} path
  */
 function generate_types(path) {
-    let type_declarations =
-        'export {};\ndeclare global {\n\tinterface Context {\n';
-    const context = readdirSync(path).filter(
-        folder =>
-            statSync(`${path}/${folder}`).isDirectory() &&
-            folder.match(/^\(.+\)$/)
-    );
-    if (context.length > 0) {
-        for (const folder of context) {
+    const context = gather_all_context_types(path);
+    let type_declarations = 'export {};\ndeclare global {\n';
+    if (Object.keys(context).length > 0) {
+        type_declarations += `\tinterface Context {\n`;
+        for (const key in context) {
             type_declarations += `\t\t${
-                regex_is_valid_identifier.test(folder.slice(1, -1))
-                    ? folder.slice(1, -1)
-                    : `['${folder.slice(1, -1)}']`
+                regex_is_valid_identifier.test(key)
+                    ? key
+                    : `['${key.replace(/\'/g, "\\'")}']`
             }: {\n`;
-            for (const file of readdirSync(`${path}/${folder}`)) {
-                type_declarations += `\t\t\t['${file.slice(
-                    0,
-                    -3
-                )}']: typeof import(\'./${folder}/${file}\').default;\n`;
+            for (const subkey in context[key]) {
+                type_declarations += `\t\t\t${
+                    regex_is_valid_identifier.test(subkey)
+                        ? subkey
+                        : `['${subkey.replace(/\'/g, "\\'")}']`
+                }: ${context[key][subkey]};\n`;
             }
-            type_declarations += `\t\t};\n`;
+            type_declarations += '\t\t};\n';
         }
+        type_declarations += '\t};\n';
+        type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
+    } else {
+        type_declarations += `\tinterface Context {};\n`;
     }
-    type_declarations += '\t};\n';
-    type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
     type_declarations += `\texport function useContext(): Context;\n`;
     const params = [];
     let dir = path;
@@ -160,15 +159,22 @@ function generate_types(path) {
         }
         dir = next;
     }
-    type_declarations += `\tinterface Params {\n`;
-    for (const param of params) {
-        type_declarations += `\t\t${
-            regex_is_valid_identifier.test(param) ? param : `['${param}']`
-        }: string;\n`;
+    if (params.length > 0) {
+        type_declarations += `\tinterface Params {\n`;
+        for (const param of params) {
+            type_declarations += `\t\t${
+                regex_is_valid_identifier.test(param)
+                    ? param
+                    : `['${param.replace(/\'/g, "\\'")}']`
+            }: string;\n`;
+        }
+        type_declarations += `\t};\n`;
+        type_declarations += `\texport function useParams<P extends keyof Params>(param: P): Params[P];\n`;
+        type_declarations += `\texport function useParams(): Params;\n`;
+    } else {
+        type_declarations += `\tinterface Params {};\n`;
+        type_declarations += `\texport function useParams(): Params;\n`;
     }
-    type_declarations += `\t};\n`;
-    type_declarations += `\texport function useParams<P extends keyof Params>(param: P): Params[P];\n`;
-    type_declarations += `\texport function useParams(): Params;\n`;
     type_declarations += '};';
     return type_declarations;
 }
@@ -193,6 +199,7 @@ app.use(async (req, res, next) => {
                 })
             );
         }
+        return;
     } else {
         const parsed_params = params(path);
         if (existsSync(parsed_params.path)) {
@@ -210,19 +217,65 @@ app.use(async (req, res, next) => {
                 res.contentType('.html');
                 res.send(await transform(template, html_path, parsed_params));
             }
+            return;
+        } else {
+            const error_path = find_closest_error_path(parsed_params.path);
+            if (error_path !== null) {
+                const template = readFileSync(error_path, 'utf-8');
+                res.send(
+                    await transform(template, error_path, {
+                        path: error_path,
+                        params: parsed_params.params
+                    })
+                );
+                return;
+            }
         }
+    }
+
+    const error_path = find_closest_error_path(path);
+    if (error_path !== null) {
+        const template = readFileSync(error_path, 'utf-8');
+        res.send(
+            await transform(template, error_path, {
+                path: error_path,
+                params: {}
+            }, {
+                message: 'Not found',
+                status: 404
+            })
+        );
+        return;
     }
 });
 
 /**
  * @param {string} path
  */
-async function gather_all_contexts(path) {
+function find_closest_error_path(path) {
+    let dir = path;
+    while (dir.length > 1) {
+        const error_path = `${dir}/+error/index.html`;
+        if (existsSync(error_path)) {
+            return error_path;
+        }
+        ({ dir } = parse(dir));
+    }
+    return null;
+}
+
+/**
+ * @param {string} path
+ * @param {{ message: string; status: number } | null} [error]
+ */
+async function gather_all_contexts(path, error = null) {
     let dir = path;
     /** @type {Record<string, Record<string, any>>} */
     const context = {};
+    if (parse(path).base === '+error' && error !== null) {
+        context.error = error;
+    }
     while (dir.length > 1) {
-        ({ dir } = parse(dir));
         const contexts = readdirSync(dir).filter(
             path =>
                 statSync(`${dir}/${path}`).isDirectory() &&
@@ -238,6 +291,40 @@ async function gather_all_contexts(path) {
                 }
             }
         }
+        ({ dir } = parse(dir));
+    }
+    return context;
+}
+
+/**
+ * @param {string} path
+ */
+function gather_all_context_types(path) {
+    let dir = path;
+    /** @type {Record<string, Record<string, any>>} */
+    const context = {};
+    if (parse(path).base === '+error') {
+        context.error = { message: 'string', status: 'number' };
+    }
+    let relative = '..';
+    while (dir.length > 1) {
+        const contexts = readdirSync(dir).filter(
+            path =>
+                statSync(`${dir}/${path}`).isDirectory() &&
+                path.match(/^\(.+\)$/)
+        );
+        for (const folder of contexts) {
+            const path = `${dir}/${folder}`;
+            for (const file of readdirSync(path)) {
+                const context_key = folder.slice(1, -1);
+                const file_key = file.slice(0, -3);
+                (context[context_key] ??= {})[
+                    file_key
+                ] = `typeof import('${relative}/${folder}/${file}').default`;
+            }
+        }
+        relative += '/..';
+        ({ dir } = parse(dir));
     }
     return context;
 }
@@ -247,12 +334,13 @@ async function gather_all_contexts(path) {
  * @param {string} template
  * @param {string} url
  * @param {ReturnType<typeof params>} [params]
+ * @param {{ message: string; status: number } | null} [error]
  */
-async function transform(template, url, params = { path: '', params: {} }) {
+async function transform(template, url, params = { path: '', params: {} }, error = null) {
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
     const dir = parse(url).dir;
-    const context = await gather_all_contexts(dir);
+    const context = await gather_all_contexts(dir, error);
     return `<!DOCTYPE html>
 <html lang="en">
     <head>

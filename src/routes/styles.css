@@ -9,8 +9,6 @@
 body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
-    /* background: black; */
-    /* background: #111; */
     background: url('./static/hero.2k.png') no-repeat center/cover;
     background-position-y: 2em;
     color: white;
@@ -27,7 +25,6 @@ nav {
     justify-content: space-between;
     align-items: center;
     color: #67bf79;
-    /* border-bottom: 0.05em #555 solid; */
     box-shadow: 0em 0em 2px 0px var(--base-darker);
 }
 
@@ -65,7 +62,6 @@ nav span a:not(:has(img)) {
 
 /* Hero section */
 .hero {
-    /* color: rgb(255, 255, 255); */
     text-align: center;
     padding: 6em 2em;
     text-shadow: #222 0em 0em 0.6em;
@@ -98,17 +94,18 @@ nav span a:not(:has(img)) {
 
 /* Mission statement */
 .mission,
-.shop , .about{
-    padding: 1em 0.8em 2em 0.8em;
+.shop,
+.about {
+    padding: 1em 0.8em 2em 1.8em;
     background-color: #111;
-    text-align: center;
+    text-align: left;
     animation: pulsate 2s infinite;
     max-width: 50vw;
     margin: 0 auto;
     clip-path: inset(-25vw, 0, -25vw, 0);
     border-radius: 0.5em;
     & > p {
-        min-width: 50vw;
+        min-width: 49vw;
     }
 }
 
@@ -182,7 +179,7 @@ nav span a:not(:has(img)) {
     line-height: 1.6;
 }
 
-.about{
+.about {
     margin-top: 7rem;
     word-spacing: 0.1em;
     line-height: 1.5em;
