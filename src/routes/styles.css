@@ -98,8 +98,8 @@ nav span a:not(:has(img)) {
 
 /* Mission statement */
 .mission,
-.shop {
-    padding: 1em 2em 2em 2em;
+.shop , .about{
+    padding: 1em 0.8em 2em 0.8em;
     background-color: #111;
     text-align: center;
     animation: pulsate 2s infinite;
@@ -180,4 +180,15 @@ nav span a:not(:has(img)) {
     margin: 0 auto;
     font-size: 1.1em;
     line-height: 1.6;
+}
+
+.about{
+    margin-top: 7rem;
+    word-spacing: 0.1em;
+    line-height: 1.5em;
+    font-size: 1.3em;
+    text-align: left;
+    & p {
+        margin-top: 1em;
+    }
 }
