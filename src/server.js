@@ -59,14 +59,12 @@ if (chokidar) {
 function params(path) {
     let dir = path;
     let child = path;
-    let grandchild = path;
     let end = path.split('/');
     let i = end.length;
     /** @type {Record<string, string>} */
     const params = {};
     while (dir.length > 1) {
         while (!existsSync(dir) && dir.length > 1) {
-            grandchild = child;
             child = dir;
             ({ dir } = parse(dir));
             i--;
@@ -82,12 +80,10 @@ function params(path) {
         if (typeof has_params === 'string') {
             const param = has_params.slice(1, -1);
             params[param] = parse(child).base;
-            grandchild = child;
             child = dir;
             ({ dir } = parse(dir));
             end[i--] = has_params;
         } else {
-            grandchild = child;
             child = dir;
             ({ dir } = parse(dir));
             i--;
@@ -95,20 +91,20 @@ function params(path) {
     }
     return {
         params,
-        end: end.join('/'),
-        child,
-        grandchild,
-        dir
+        path: end.join('/')
     };
 }
 
-for (const file of readdirSync('./routes', { recursive: true })) {
-    if (typeof file !== 'string') continue;
-    if (file.endsWith('index.html')) {
-        const dir = `./routes/${file.split(sep).slice(0, -1).join('/')}`;
-        writeFileSync(`${dir}/types.d.ts`, generate_types(dir));
+function generate_all_types() {
+    for (const file of readdirSync('./routes', { recursive: true })) {
+        if (typeof file !== 'string') continue;
+        if (file.endsWith('index.html')) {
+            const dir = `./routes/${file.split(sep).slice(0, -1).join('/')}`;
+            writeFileSync(`${dir}/types.d.ts`, generate_types(dir));
+        }
     }
 }
+generate_all_types();
 
 /**
  * we do some hacky string concatenation to generate the types for `useContext`.
@@ -180,15 +176,15 @@ app.use(async (req, res, next) => {
         }
     } else {
         const parsed_params = params(path);
-        console.log(parsed_params.end);
-        if (existsSync(parsed_params.end)) {
-            const stats = statSync(parsed_params.end);
+        console.log(parsed_params.path);
+        if (existsSync(parsed_params.path)) {
+            const stats = statSync(parsed_params.path);
             if (stats.isFile()) {
                 res.contentType(
-                    `.${parsed_params.end.split('.').at(-1) ?? 'txt'}`
+                    `.${parsed_params.path.split('.').at(-1) ?? 'txt'}`
                 );
             } else {
-                const path = parsed_params.end;
+                const path = parsed_params.path;
                 const html_path = `${
                     path + (path.charAt(path.length - 1) === '/' ? '' : '/')
                 }index.html`;
