@@ -50,11 +50,18 @@ if (chokidar) {
         });
         arr.push(res);
     });
+    chokidar.watch('./routes').on('all', () => {
+        // TODO do fine-grained type updates if possible
+        generate_all_types();
+    });
 }
 
 /**
- *
+ * Checks if a path has params, and if so what its params are.
+ * For example, if `path` is `organization/repository` and you have a route at `src/routes/[org]/[repo]`,
+ * the result would be `{ path: './routes/[org]/[repo]', params: { org: 'organization', repo: 'repository' } }`.
  * @param {string} path
+ * @returns {{ path: string; params: Record<string, string> }}
  */
 function params(path) {
     let dir = path;
@@ -107,7 +114,8 @@ function generate_all_types() {
 generate_all_types();
 
 /**
- * we do some hacky string concatenation to generate the types for `useContext`.
+ * Generates type declarations for a certain path.
+ * This includes ambient declarations for `useContext` and `useParams`.
  * @param {string} path
  */
 function generate_types(path) {
@@ -172,7 +180,7 @@ app.use(async (req, res, next) => {
             }index.html`;
             const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
-            res.send(await convert(template, html_path, {}));
+            res.send(await transform(template, html_path, {}));
         }
     } else {
         const parsed_params = params(path);
@@ -191,7 +199,7 @@ app.use(async (req, res, next) => {
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
                 res.send(
-                    await convert(template, html_path, parsed_params.params)
+                    await transform(template, html_path, parsed_params.params)
                 );
             }
         }
@@ -199,11 +207,12 @@ app.use(async (req, res, next) => {
 });
 
 /**
+ * Transforms the template to include `<head>` content and context/params injection.
  * @param {string} template
  * @param {string} url
  * @param {Record<string, string>} [params]
  */
-async function convert(template, url, params = {}) {
+async function transform(template, url, params = {}) {
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
     /** @type {Record<string, Record<string, any>>} */
