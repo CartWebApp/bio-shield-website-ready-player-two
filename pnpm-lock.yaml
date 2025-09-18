@@ -23,12 +23,6 @@ importers:
       express:
         specifier: ^5.1.0
         version: 5.1.0
-      html-tags:
-        specifier: ^5.1.0
-        version: 5.1.0
-      zimmerframe:
-        specifier: ^1.1.4
-        version: 1.1.4
     devDependencies:
       chokidar:
         specifier: ^4.0.3
@@ -197,10 +191,6 @@ packages:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
 
-  html-tags@5.1.0:
-    resolution: {integrity: sha512-n6l5uca7/y5joxZ3LUePhzmBFUJ+U2YWzhMa8XUTecSeSlQiZdF5XAd/Q3/WUl0VsXgUwWi8I7CNIwdI5WN1SQ==}
-    engines: {node: '>=20.10'}
-
   http-errors@2.0.0:
     resolution: {integrity: sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==}
     engines: {node: '>= 0.8'}
@@ -354,9 +344,6 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
-
-  zimmerframe@1.1.4:
-    resolution: {integrity: sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ==}
 
 snapshots:
 
@@ -557,8 +544,6 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  html-tags@5.1.0: {}
-
   http-errors@2.0.0:
     dependencies:
       depd: 2.0.0
@@ -719,5 +704,3 @@ snapshots:
   vary@1.1.2: {}
 
   wrappy@1.0.2: {}
-
-  zimmerframe@1.1.4: {}

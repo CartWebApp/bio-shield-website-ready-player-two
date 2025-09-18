@@ -1,5 +1,4 @@
 // @ts-check
-/// <reference lib="es2024" />
 
 /** @typedef {{ body: DocumentFragment; title: string }} CacheEntry */
 /** @type {Map<string, CacheEntry>} */

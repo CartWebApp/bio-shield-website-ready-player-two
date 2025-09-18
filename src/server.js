@@ -1,10 +1,16 @@
 /** @import { Response } from 'express' */
-/** @import { HtmlTags as HTMLTag } from 'html-tags' */
-import { readFileSync, existsSync, statSync, readdirSync } from 'fs';
+const regex_is_valid_identifier = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/;
+import {
+    readFileSync,
+    existsSync,
+    statSync,
+    readdirSync,
+    writeFileSync
+} from 'fs';
 import { DEV } from 'esm-env';
 import express from 'express';
-import html_tags from 'html-tags';
 import { uneval } from 'devalue';
+import { join, parse } from 'path';
 const chokidar = DEV && (await import('chokidar'));
 
 const app = express();
@@ -44,6 +50,43 @@ if (chokidar) {
     });
 }
 
+function params() {}
+
+/**
+ * we do some hacky string concatenation to generate the types for `useContext`.
+ * @param {string} path
+ */
+function generate_types(path) {
+    let type_declarations =
+        'export {};\ndeclare global {\n\tinterface Context {\n';
+    const context = readdirSync(path).filter(
+        folder =>
+            statSync(`${path}/${folder}`).isDirectory() &&
+            folder.match(/^\(.+\)$/)
+    );
+    if (context.length > 0) {
+        for (const folder of context) {
+            type_declarations += `\t\t${
+                regex_is_valid_identifier.test(folder.slice(1, -1))
+                    ? folder.slice(1, -1)
+                    : `['${folder.slice(1, -1)}']`
+            }: {\n`;
+            for (const file of readdirSync(`${path}/${folder}`)) {
+                type_declarations += `\t\t\t['${file.slice(
+                    0,
+                    -3
+                )}']: typeof import(\'./${folder}/${file}\').default;\n`;
+            }
+            type_declarations += `\t\t};\n`;
+        }
+    }
+    type_declarations += '\t};\n';
+    type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
+    type_declarations += `\texport function useContext(): Context;\n`;
+    type_declarations += '};';
+    return type_declarations;
+}
+
 app.use(async (req, res, next) => {
     const path = `./routes${req.path}`;
     if (existsSync(path)) {
@@ -59,7 +102,14 @@ app.use(async (req, res, next) => {
                 'utf-8'
             );
             res.contentType('.html');
-            res.send(await convert(template, path));
+            res.send(
+                await convert(
+                    template,
+                    `${
+                        path + (path.charAt(path.length - 1) === '/' ? '' : '/')
+                    }index.html`
+                )
+            );
         }
     }
 });
@@ -74,19 +124,27 @@ async function convert(template, url) {
     /** @type {Record<string, Record<string, any>>} */
     const context_injection = {};
     let context_script = '';
-    const context = readdirSync(url).filter(path => statSync(`${url}/${path}`).isDirectory() && path.match(/^\(.+\)$/));
+    const dir = parse(url).dir;
+    const context = readdirSync(dir).filter(
+        path =>
+            statSync(`${dir}/${path}`).isDirectory() && path.match(/^\(.+\)$/)
+    );
     if (context.length > 0) {
         for (const folder of context) {
-            for (const file of readdirSync(`${url}/${folder}`)) {
-                const module = await import(`${url}/${folder}/${file}`);
+            for (const file of readdirSync(`${dir}/${folder}`)) {
+                const module = await import(`${dir}/${folder}/${file}`);
                 if (module?.default) {
-                    (context_injection[folder] ??= {})[file.slice(0, -3)] = module.default;
+                    (context_injection[folder] ??= {})[file.slice(0, -3)] =
+                        module.default;
                 }
             }
-            if (context_script.length === 0) context_script = 'const context = {};\n';
-            context_script += `context['${folder.slice(1, -1)}'] = ${uneval(context_injection[folder])};\n`;
+            context_script += `\t\t\t\t\tcontext['${folder.slice(
+                1,
+                -1
+            )}'] = ${uneval(context_injection[folder])};\n`;
         }
     }
+    writeFileSync(join(dir, 'types.d.ts'), generate_types(dir));
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
@@ -103,7 +161,17 @@ async function convert(template, url) {
                 ? `
         <script src="/dev.js"></script>`
                 : ''
-        }${context_script.length > 0 ? `<script>(function() {const empty = Symbol();globalThis.useContext = function useContext(key = empty) {\n${context_script};\nreturn key === empty ? context : context[key];\n}}())</script>` : ''}
+        }
+        <script>
+            (function() {
+                const empty = Symbol();
+                globalThis.useContext = function useContext(key = empty) {
+                    const context = {};
+${context_script}
+                    return key === empty ? context : context[key];
+                };
+            }());
+        </script>
         <link rel="preconnect" href="https://rsms.me/" />
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

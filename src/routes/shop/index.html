@@ -6,19 +6,4 @@ Shop — Bio-Shield
     <div class="products">
     </div>
 </div>
-<script type="module">
-    // @ts-check
-    /// <reference path='../../../client.d.ts' />
-    const products = useContext('products');
-    const list = /** @type {HTMLDivElement} */ (document.querySelector('.products'));
-    for (const [endpoint, product] of Object.entries(products)) {
-        const div = document.createElement('div');
-        div.className = 'product';
-        div.append(product.name);
-        const price = document.createElement('span');
-        price.className = 'price';
-        price.append(product.price);
-        div.append(price);
-        list.append(div);
-    }
-</script>
+<script src="/shop/script.js" type="module"></script>
