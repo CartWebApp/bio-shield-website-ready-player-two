@@ -355,7 +355,8 @@ app.use(async (req, res, next) => {
     if (existsSync(path)) {
         const stats = statSync(path);
         if (stats.isFile()) {
-            res.contentType(`.${path.split('.').at(-1) ?? 'txt'}`);
+            const type = path.split('.').at(-1);
+            res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
             res.sendFile(path, { root: '.' });
         } else {
             const html_path = `${
@@ -392,9 +393,8 @@ app.use(async (req, res, next) => {
         if (existsSync(parsed_params.path)) {
             const stats = statSync(parsed_params.path);
             if (stats.isFile()) {
-                res.contentType(
-                    `.${parsed_params.path.split('.').at(-1) ?? 'txt'}`
-                );
+                const type = parsed_params.path.split('.').at(-1);
+                res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
             } else {
                 const path = parsed_params.path;
                 const html_path = `${
