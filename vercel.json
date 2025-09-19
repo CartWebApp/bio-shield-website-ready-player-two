@@ -1,7 +1,5 @@
 {
-	"version": 2,
-	"routes": [
-		{ "src": "/api/(.*)", "dest": "/api/index.js" },
-		{ "src": "/(.*)", "dest": "/api/index.js" }
-	]
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "version": 2,
+    "framework": "express"
 }
