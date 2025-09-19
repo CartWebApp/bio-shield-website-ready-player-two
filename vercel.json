@@ -4,7 +4,8 @@
     "framework": "express",
     "functions": {
         "api/index.js": {
-            "includeFiles": "**/**"
+            "includeFiles": "**/**",
+            "excludeFiles": ".git"
         }
     }
 }
