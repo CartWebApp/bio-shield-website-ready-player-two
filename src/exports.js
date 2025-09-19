@@ -2,7 +2,9 @@ import { STATUS_CODES } from 'http';
 import { active_context, active_params } from './server.js';
 
 /**
+ * Triggers an HTTP error when used in a `load` function.
  * @param {number} status
+ * @param {string} [message]
  * @returns {never}
  */
 export function error(status, message = STATUS_CODES[status]) {

@@ -29,7 +29,7 @@ export default {
 };
 ```
 
-Then, on the client, you can access the context via `useContext`:
+Then, either in a `load` function or on the client, you can access the context via `useContext`:
 
 ```js
 const posts = useContext('posts');
@@ -85,19 +85,19 @@ To appease TypeScript, we generate ambient `d.ts` files on the fly for each rout
 
 ## Load Functions
 
-Like SvelteKit, you can use `load` functions. `load` functions are default exports from `+load.js` files. These are async or sync functions that take a `request` parameter and can return a value. This value can either be `null`, `undefined`, or an object which will be added to the context. If you need to throw an HTTP error, you can call the `error` function available in the `#server` module. This is also where `useContext` can be called from the server.
+Like SvelteKit, you can use `load` functions. `load` functions are default exports from `+load.js` files. These are async or sync functions that take a `request` parameter and can return a value. This value can either be `null`, `undefined`, or an object which will be added to the context. If you need to throw an HTTP error, you can call the `error` function available in the `#server` module. This is also where `useContext` and `useParams` can be called from the server.
 
 ```js
 // src/routes/shop/[product]/+load.js
 /** @import { Product } from '#types' */
 /** @import { LoadFunction } from './types.js' */
 /// <reference path="./types.d.ts" />
-import { error, useContext } from '#server';
+import { error, useContext, useParams } from '#server';
 
 /** @type {LoadFunction<{ item: Product }>} */
 export default function load(request) {
     const { products } = useContext();
-    const { product } = request.params;
+    const { product } = useParams();
     if (!Object.hasOwn(products, product)) {
         error(404);
     }
