@@ -10,6 +10,8 @@ type Context = __IntersectNonNull<[{
 declare module '#server' {
 	export function useContext(): Context;
 	export function useContext<K extends keyof Context>(key: K): Context[K];
+	// @ts-ignore
+	export function useParams(): Params;
 }
 declare global {
 	export function useContext<K extends keyof Context>(key: K): Context[K];

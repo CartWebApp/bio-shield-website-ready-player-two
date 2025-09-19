@@ -22,6 +22,8 @@ const chokidar = DEV && (await import('chokidar'));
 const app = express();
 /** @type {Record<string, Record<string, any>> | null} */
 export let active_context = null;
+/** @type {Record<string, string> | null} */
+export let active_params = null;
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -226,11 +228,19 @@ function generate_types(path) {
             .join('')}]>;\n// @ts-ignore\ndeclare module '#server' {\n`;
         type_declarations += `\texport function useContext(): Context;\n`;
         type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
+        if (params.length > 0) {
+            type_declarations += `\t// @ts-ignore\n\texport function useParams<K extends keyof Params>(param: K): Params[K];\n`;
+        }
+        type_declarations += `\t// @ts-ignore\n\texport function useParams(): Params;\n`;
         type_declarations += '}\ndeclare global {\n';
         type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
     } else {
         type_declarations += `// @ts-ignore\ndeclare module '#server' {\n`;
         type_declarations += `\texport function useContext(): Context;\n`;
+        if (params.length > 0) {
+            type_declarations += `\t// @ts-ignore\n\texport function useParams<K extends keyof Params>(param: K): Params[K];\n`;
+        }
+        type_declarations += `\t// @ts-ignore\n\texport function useParams(): Params;\n`;
         type_declarations += `}\ntype Context = __IntersectNonNull<[{}${context.load_fns
             .map(
                 load_fn =>
@@ -538,6 +548,7 @@ async function transform(
     const context = await gather_all_contexts(dir, error);
     // we clone the context to (1) assert that its valid and (2) avoid mutation during `load` functions
     active_context = deserialize(stringify(context));
+    active_params = structuredClone(params.params);
     const load_fns = await gather_load_functions(dir);
     for (const load of load_fns) {
         const res = (await load(request)) ?? {};
@@ -547,6 +558,7 @@ async function transform(
             );
         }
         active_context = deserialize(stringify(Object.assign(context, res)));
+        active_params = structuredClone(params.params);
     }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
@@ -557,7 +569,7 @@ async function transform(
         existsSync(`${dir}/+client.js`) && dir !== './routes'
             ? (await minify(readFileSync(`${dir}/+client.js`, 'utf-8'))).code
             : '';
-    active_context = null;
+    active_context = active_params = null;
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
@@ -623,7 +635,7 @@ async function transform(
 
 app.listen(3000, () => {
     console.log(
-        `${kleur.gray('Server running on ')}${kleur.green(
+        `${kleur.gray('Server running at ')}${kleur.green(
             kleur.bold('http://localhost:3000')
         )}`
     );

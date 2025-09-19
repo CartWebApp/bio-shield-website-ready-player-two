@@ -3,6 +3,8 @@ export {};
 // @ts-ignore
 declare module '#server' {
 	export function useContext(): Context;
+	// @ts-ignore
+	export function useParams(): Params;
 }
 type Context = __IntersectNonNull<[{}]>;
 declare global {
