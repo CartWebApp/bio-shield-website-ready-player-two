@@ -1,4 +1,4 @@
-/** @import { Product } from '../../../types' */
+/** @import { Product } from '#types' */
 
 export default /** @type {Product} */ ({
     name: 'Bio Shield Spray',

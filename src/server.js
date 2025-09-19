@@ -1,4 +1,6 @@
-/** @import { Response } from 'express' */
+/** @import { Response, Request } from 'express' */
+/** @import { OutgoingHttpHeaders } from 'http' */
+/** @import { __Request } from './types.js' */
 // this regex came from
 // https://github.com/sveltejs/svelte/blob/461642283285fdbe854a1dce5000cf4c882e566e/packages/svelte/src/compiler/phases/patterns.js#L17
 const regex_is_valid_identifier = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/;
@@ -11,12 +13,14 @@ import {
 } from 'fs';
 import { DEV } from 'esm-env';
 import express from 'express';
-import { uneval } from 'devalue';
+import { uneval, parse as deserialize, stringify } from 'devalue';
 import { parse, sep } from 'path';
 import kleur from 'kleur';
+import { STATUS_CODES } from 'http';
 const chokidar = DEV && (await import('chokidar'));
-
 const app = express();
+/** @type {Record<string, Record<string, any>> | null} */
+export let active_context = null;
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -32,7 +36,8 @@ if (chokidar) {
 
         if (!watchers.has(path)) {
             watchers.set(path, []);
-            chokidar.watch(`./${path}`).on('change', () => {
+            chokidar.watch(`./${path}`).on('change', _path => {
+                if (_path.match(/(tsconfig\.json)|(types\.d\.ts)$/)) return;
                 const time = new Date()
                     .toLocaleTimeString('en-US', { hour12: false })
                     .replace(/:[0-9]{2}$/, '');
@@ -56,7 +61,8 @@ if (chokidar) {
         });
         arr.push(res);
     });
-    chokidar.watch('./routes').on('all', () => {
+    chokidar.watch('./routes').on('all', (event, path) => {
+        if (path.endsWith('types.d.ts')) return;
         // TODO do fine-grained type updates if possible
         generate_all_types();
     });
@@ -112,8 +118,34 @@ function generate_all_types() {
     for (const file of readdirSync('./routes', { recursive: true })) {
         if (typeof file !== 'string') continue;
         if (file.endsWith('index.html')) {
-            const dir = `./routes/${file.split(sep).slice(0, -1).join('/')}`;
-            writeFileSync(`${dir}/types.d.ts`, generate_types(dir));
+            // i've found that `fs.writeFileSync` fails randomly after ~5 mins of inactivity
+            // so this'll stop that from crashing the server
+            try {
+                const dir = `./routes/${file
+                    .split(sep)
+                    .slice(0, -1)
+                    .join('/')}`;
+                writeFileSync(`${dir}/types.d.ts`, generate_types(dir));
+                // because typescript always implicitly `<reference>`s ambient type declarations,
+                // we have to create a tsconfig for each route :|
+                writeFileSync(
+                    `${dir}/tsconfig.json`,
+                    JSON.stringify({
+                        compilerOptions: {
+                            target: 'ES2024',
+                            checkJs: true,
+                            allowJs: true,
+                            strict: true,
+                            moduleResolution: 'nodenext',
+                            module: 'nodenext',
+                            resolveJsonModule: true,
+                            noEmit: true
+                        },
+                        include: ['*', '*/*'],
+                        exclude: []
+                    })
+                );
+            } catch {}
         }
     }
 }
@@ -125,31 +157,28 @@ generate_all_types();
  * @param {string} path
  */
 function generate_types(path) {
-    const context = gather_all_context_types(path);
-    let type_declarations = 'export {};\ndeclare global {\n';
-    if (Object.keys(context).length > 0) {
-        type_declarations += `\tinterface Context {\n`;
-        for (const key in context) {
-            type_declarations += `\t\t${
-                regex_is_valid_identifier.test(key)
-                    ? key
-                    : `['${key.replace(/\'/g, "\\'")}']`
-            }: {\n`;
-            for (const subkey in context[key]) {
-                type_declarations += `\t\t\t${
-                    regex_is_valid_identifier.test(subkey)
-                        ? subkey
-                        : `['${subkey.replace(/\'/g, "\\'")}']`
-                }: ${context[key][subkey]};\n`;
+    /**
+     * @param {string[]} params
+     */
+    function generate_param_type(params) {
+        let type_declarations = '';
+        if (params.length > 0) {
+            type_declarations += `interface Params {\n`;
+            for (const param of params) {
+                type_declarations += `\t${
+                    regex_is_valid_identifier.test(param)
+                        ? param
+                        : `['${param.replace(/\'/g, "\\'")}']`
+                }: string;\n`;
             }
-            type_declarations += '\t\t};\n';
+            type_declarations += `}\n`;
+        } else {
+            type_declarations += `interface Params {}\n`;
         }
-        type_declarations += '\t};\n';
-        type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
-    } else {
-        type_declarations += `\tinterface Context {};\n`;
+        return type_declarations;
     }
-    type_declarations += `\texport function useContext(): Context;\n`;
+    const context = gather_all_context_types(path);
+    /** @type {string[]} */
     const params = [];
     let dir = path;
     while (dir.length > 0) {
@@ -159,27 +188,159 @@ function generate_types(path) {
         }
         dir = next;
     }
-    if (params.length > 0) {
-        type_declarations += `\tinterface Params {\n`;
-        for (const param of params) {
-            type_declarations += `\t\t${
-                regex_is_valid_identifier.test(param)
-                    ? param
-                    : `['${param.replace(/\'/g, "\\'")}']`
-            }: string;\n`;
+    let type_declarations = `import type { __Request, __LoadFunction, __IntersectNonNull } from \'#__types\';\nexport {};\n`;
+    if (Object.keys(context.context).length > 0) {
+        const ctx = context.context;
+        type_declarations += `type Context = __IntersectNonNull<[{\n`;
+        for (const key in ctx) {
+            type_declarations += `\t${
+                regex_is_valid_identifier.test(key)
+                    ? key
+                    : `['${key.replace(/\'/g, "\\'")}']`
+            }: {\n`;
+            for (const subkey in ctx[key]) {
+                type_declarations += `\t\t${
+                    regex_is_valid_identifier.test(subkey)
+                        ? subkey
+                        : `['${subkey.replace(/\'/g, "\\'")}']`
+                }: ${ctx[key][subkey]};\n`;
+            }
+            type_declarations += `\t};\n`;
         }
-        type_declarations += `\t};\n`;
-        type_declarations += `\texport function useParams<P extends keyof Params>(param: P): Params[P];\n`;
-        type_declarations += `\texport function useParams(): Params;\n`;
+        type_declarations += `}${context.load_fns
+            .map(
+                load_fn =>
+                    `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
+            )
+            .join('')}]>\n// @ts-ignore\ndeclare module '#server' {\n`;
+        type_declarations += `\texport function useContext(): Context;\n`;
+        type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
+        type_declarations += '}\ndeclare global {\n';
+        type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
     } else {
-        type_declarations += `\tinterface Params {};\n`;
-        type_declarations += `\texport function useParams(): Params;\n`;
+        type_declarations += `// @ts-ignore\ndeclare module '#server' {\n`;
+        type_declarations += `\texport function useContext(): Context;\n`;
+        type_declarations += `}\ntype Context = __IntersectNonNull<[{}${context.load_fns
+            .map(
+                load_fn =>
+                    `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
+            )
+            .join('')}]>\ndeclare global {\n`;
     }
-    type_declarations += '};';
+    type_declarations += `\texport function useContext(): Context;\n`;
+    if (params.length > 0) {
+        type_declarations +=
+            '\texport function useParams<K extends keyof Params>(key: K): Params[K];\n';
+    }
+    type_declarations += '\texport function useParams(): Params;\n';
+    type_declarations += '}\n';
+    type_declarations += generate_param_type(params);
+    type_declarations += `export type Request = __Request<Params>;\n`;
+    type_declarations += `export type LoadFunction<T extends {} | null | void> = __LoadFunction<Request, T>;\n`;
     return type_declarations;
 }
 
+/**
+ * @param {string} path
+ */
+async function gather_load_functions(path) {
+    let dir = path;
+    /** @type {Array<(request: __Request<Record<string, string>>) => any>} */
+    const load_fns = [];
+    while (dir.length > 1) {
+        const load_path = `${dir}/+load.js`;
+        if (existsSync(load_path)) {
+            const { default: load } = await import(load_path);
+            load_fns.push(load);
+        }
+        ({ dir } = parse(dir));
+    }
+    return load_fns;
+}
+
+/**
+ * @param {string} path
+ */
+function gather_load_function_paths(path) {
+    let dir = path;
+    /** @type {string[]} */
+    const load_fns = [];
+    let relative = '.';
+    while (dir.length > 1) {
+        const load_path = `${dir}/+load.js`;
+        if (existsSync(load_path)) {
+            load_fns.push(`${relative}/+load.js`);
+        }
+        ({ dir } = parse(dir));
+        relative += relative === '.' ? '.' : '/..';
+    }
+    return load_fns;
+}
+
+/**
+ * @param {Request} req
+ * @param {Response} res
+ * @param {Record<string, string>} params
+ * @returns {__Request<Record<string, string>>}
+ */
+function create_request_object(req, res, params) {
+    return {
+        request: req,
+        params: params,
+        path: req.path,
+        setHeaders(headers) {
+            res.set(headers);
+        }
+    };
+}
+
+/**
+ * @template T
+ * @param {T} err
+ * @returns {T is { message: string; status: number }}
+ */
+function is_error_object(err) {
+    if (typeof err !== 'object' || err === null) return false;
+    if (Object.keys(err).length !== 2) return false;
+    if (!('message' in err) || !('status' in err)) return false;
+    if (typeof err.message !== 'string' || typeof err.status !== 'number')
+        return false;
+    return true;
+}
+
 app.use(async (req, res, next) => {
+    /**
+     * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
+     */
+    async function error({
+        err = {
+            message: 'Not found',
+            status: 404
+        },
+        params = {}
+    } = {}) {
+        const error_path = find_closest_error_path(path);
+        if (error_path !== null) {
+            const template = readFileSync(error_path, 'utf-8');
+            res.status(err.status).send(
+                await transform(
+                    template,
+                    error_path,
+                    create_request_object(req, res, params),
+                    {
+                        path: error_path,
+                        params: params
+                    },
+                    err,
+                    prefetching
+                )
+            );
+            return;
+        } else {
+            res.status(err.status);
+        }
+    }
+    if (req.path === 'events' && DEV) return next();
     const path = `./routes${req.path}`;
     const prefetching = typeof req.query.prefetching === 'string';
     if (existsSync(path)) {
@@ -193,18 +354,28 @@ app.use(async (req, res, next) => {
             }index.html`;
             const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
-            res.send(
-                await transform(
-                    template,
-                    html_path,
-                    {
-                        path: html_path,
-                        params: {}
-                    },
-                    null,
-                    prefetching
-                )
-            );
+            try {
+                res.send(
+                    await transform(
+                        template,
+                        html_path,
+                        create_request_object(req, res, {}),
+                        {
+                            path: html_path,
+                            params: {}
+                        },
+                        null,
+                        prefetching
+                    )
+                );
+            } catch (_err) {
+                const err = /** @type {{ message: string; status: number }} */ (
+                    is_error_object(_err)
+                        ? _err
+                        : { message: STATUS_CODES[500], status: 500 }
+                );
+                await error({ err });
+            }
         }
         return;
     } else {
@@ -222,60 +393,35 @@ app.use(async (req, res, next) => {
                 }index.html`;
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
-                res.send(
-                    await transform(
-                        template,
-                        html_path,
-                        parsed_params,
-                        null,
-                        prefetching
-                    )
-                );
+                try {
+                    res.send(
+                        await transform(
+                            template,
+                            html_path,
+                            create_request_object(
+                                req,
+                                res,
+                                parsed_params.params
+                            ),
+                            parsed_params,
+                            null,
+                            prefetching
+                        )
+                    );
+                } catch (_err) {
+                    const err =
+                        /** @type {{ message: string; status: number }} */ (
+                            is_error_object(_err)
+                                ? _err
+                                : { message: STATUS_CODES[500], status: 500 }
+                        );
+                    await error({ err });
+                }
             }
             return;
         } else {
-            const error_path = find_closest_error_path(parsed_params.path);
-            if (error_path !== null) {
-                const template = readFileSync(error_path, 'utf-8');
-                res.send(
-                    await transform(
-                        template,
-                        error_path,
-                        {
-                            path: error_path,
-                            params: parsed_params.params
-                        },
-                        {
-                            message: 'Not found',
-                            status: 404
-                        },
-                        prefetching
-                    )
-                );
-                return;
-            }
+            await error({ params: parsed_params.params });
         }
-    }
-
-    const error_path = find_closest_error_path(path);
-    if (error_path !== null) {
-        const template = readFileSync(error_path, 'utf-8');
-        res.send(
-            await transform(
-                template,
-                error_path,
-                {
-                    path: error_path,
-                    params: {}
-                },
-                {
-                    message: 'Not found',
-                    status: 404
-                },
-                prefetching
-            )
-        );
-        return;
     }
 });
 
@@ -336,6 +482,7 @@ function gather_all_context_types(path) {
     if (parse(path).base === '+error') {
         context.error = { message: 'string', status: 'number' };
     }
+    const load_fns = gather_load_function_paths(path);
     let relative = '.';
     while (dir.length > 1) {
         const contexts = readdirSync(dir).filter(
@@ -356,13 +503,14 @@ function gather_all_context_types(path) {
         relative += relative === '.' ? '.' : '/..';
         ({ dir } = parse(dir));
     }
-    return context;
+    return { context, load_fns };
 }
 
 /**
  * Transforms the template to include `<head>` content and context/params injection.
  * @param {string} template
  * @param {string} url
+ * @param {__Request<Record<string, string>>} request
  * @param {ReturnType<typeof params>} [params]
  * @param {{ message: string; status: number } | null} [error]
  * @param {boolean} [prefetching]
@@ -370,21 +518,35 @@ function gather_all_context_types(path) {
 async function transform(
     template,
     url,
+    request,
     params = { path: '', params: {} },
     error = null,
     prefetching = false
 ) {
+    const dir = parse(url).dir;
+    const context = await gather_all_contexts(dir, error);
+    // we clone the context to (1) assert that its valid and (2) avoid mutation during `load` functions
+    active_context = deserialize(stringify(context));
+    const load_fns = await gather_load_functions(dir);
+    for (const load of load_fns) {
+        const res = (await load(request)) ?? {};
+        if (typeof res !== 'object') {
+            throw new Error(
+                'the return value of each `load` function must be an object or nullish value'
+            );
+        }
+        active_context = deserialize(stringify(Object.assign(context, res)));
+    }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
-    const dir = parse(url).dir;
-    let main_script = existsSync(`./routes/script.js`)
-        ? readFileSync('./routes/script.js', 'utf-8')
+    let main_script = existsSync(`./routes/+client.js`)
+        ? readFileSync('./routes/+client.js', 'utf-8')
         : '';
     let script =
-        existsSync(`${dir}/script.js`) && dir !== './routes'
-            ? readFileSync(`${dir}/script.js`, 'utf-8')
+        existsSync(`${dir}/+client.js`) && dir !== './routes'
+            ? readFileSync(`${dir}/+client.js`, 'utf-8')
             : '';
-    const context = await gather_all_contexts(dir, error);
+    active_context = null;
     return `<!DOCTYPE html>
 <html lang="en">
     <head>

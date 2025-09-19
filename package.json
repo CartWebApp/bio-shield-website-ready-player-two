@@ -12,6 +12,11 @@
         "type": "git",
         "url": "git+https://github.com/CartWebApp/bio-shield-website-ready-player-two.git"
     },
+    "imports": {
+        "#server": "./src/exports.js",
+        "#__types": "./src/types.d.ts",
+        "#types": "./src/app.d.ts"
+    },
     "keywords": [],
     "author": "",
     "license": "ISC",

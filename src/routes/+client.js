@@ -52,6 +52,7 @@ async function navigate(url) {
         });
         document.body.append(elem);
     }
+    await Promise.resolve();
     await init();
 }
 
@@ -63,16 +64,18 @@ async function navigate(url) {
 async function prefetch(url, dependents = []) {
     const instance = new URL(url, location.href);
     instance.searchParams.append('prefetching', 'true');
-    const res = await fetch(instance.toString());
-    const text = await res.text();
-    const tree = parser.parseFromString(text, 'text/html');
-    const { body, title, head } = tree;
-    const [...scripts] = head.querySelectorAll('script');
-    cache.set(url, { body: template(body.innerHTML), title, scripts });
-    const handle = handler(url);
-    for (const link of dependents) {
-        add_event_listener.call(link, 'click', handle);
-    }
+    try {
+        const res = await fetch(instance.toString());
+        const text = await res.text();
+        const tree = parser.parseFromString(text, 'text/html');
+        const { body, title, head } = tree;
+        const [...scripts] = head.querySelectorAll('script');
+        cache.set(url, { body: template(body.innerHTML), title, scripts });
+        const handle = handler(url);
+        for (const link of dependents) {
+            add_event_listener.call(link, 'click', handle);
+        }
+    } catch {}
 }
 
 /**
@@ -108,9 +111,9 @@ async function init() {
     );
     Promise.allSettled(promises);
     const body = document.body;
-    preload('/static/hero.4k.jpg').then(() => {
+    preload('/static/hero.4k.jpg').then(url => {
         console.log('loaded 4k image');
-        body.style.backgroundImage = "url('/static/hero.4k.jpg')";
+        body.style.backgroundImage = `url('${url}')`;
     });
 }
 
@@ -126,16 +129,20 @@ add_event_listener.call(
     },
     { once: true }
 );
-await init();
+queueMicrotask(async () => {
+    await Promise.resolve();
+    await init();
+});
 export {};
 
 /**
  * @param {string} src
+ * @returns {Promise<string>}
  */
 function preload(src) {
     return new Promise((f, r) => {
         const image = new Image();
-        image.onload = () => f(src);
+        image.onload = () => f(image.src);
         image.onerror = r;
 
         to_data_url(src).then(res => {

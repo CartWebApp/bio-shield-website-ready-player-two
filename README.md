@@ -73,7 +73,7 @@ In the case that an HTTP error is thrown (most likely 404 not found), you can ad
 
 ### Scripts
 
-If you have a `script.js` file in the same folder as a route, it will be inlined with your `index.html` without the need to `<script src` it. Additionally, the root `script.js` will be inlined into every route.
+If you have a `+client.js` file in the same folder as a route, it will be inlined with your `index.html` without the need to `<script src` it. Additionally, the root `+client.js` will be inlined into every route.
 
 ## Types
 
@@ -82,3 +82,29 @@ To appease TypeScript, we generate ambient `d.ts` files on the fly for each rout
 ```js
 /// <reference path="./types.d.ts" />
 ```
+
+## Load Functions
+
+Like SvelteKit, you can use `load` functions. `load` functions are default exports from `+load.js` files. These are async or sync functions that take a `request` parameter and can return a value. This value can either be `null`, `undefined`, or an object which will be added to the context. If you need to throw an HTTP error, you can call the `error` function available in the `#server` module. This is also where `useContext` can be called from the server.
+
+```js
+// src/routes/shop/[product]/+load.js
+/** @import { Product } from '#types' */
+/** @import { LoadFunction } from './types.js' */
+/// <reference path="./types.d.ts" />
+import { error, useContext } from '#server';
+
+/** @type {LoadFunction<{ item: Product }>} */
+export default function load(request) {
+    const { products } = useContext();
+    const { product } = request.params;
+    if (!Object.hasOwn(products, product)) {
+        error(404);
+    }
+    return {
+        item: products[/** @type {keyof typeof products} */ (product)]
+    };
+}
+```
+
+> Like context, `load` functions cascade, so accessing `/shop/shoes` will call `load` functions from `src/routes/+load.js`, `src/routes/shop/+load.js`, and `src/routes/shop/[item]/+load.js` in that order.

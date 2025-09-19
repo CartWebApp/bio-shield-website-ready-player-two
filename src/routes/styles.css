@@ -92,10 +92,7 @@ nav span a:not(:has(img)) {
     margin: 0 auto;
 }
 
-/* Mission statement */
-.mission,
-.shop,
-.about {
+.island {
     padding: 1em 0.8em 2em 1.8em;
     background-color: #111;
     text-align: left;
