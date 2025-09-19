@@ -17,6 +17,7 @@ import { uneval, parse as deserialize, stringify } from 'devalue';
 import { parse, sep } from 'path';
 import kleur from 'kleur';
 import { STATUS_CODES } from 'http';
+import { minify } from 'terser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
 /** @type {Record<string, Record<string, any>> | null} */
@@ -540,11 +541,11 @@ async function transform(
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
     let main_script = existsSync(`./routes/+client.js`)
-        ? readFileSync('./routes/+client.js', 'utf-8')
+        ? (await minify(readFileSync('./routes/+client.js', 'utf-8'))).code
         : '';
     let script =
         existsSync(`${dir}/+client.js`) && dir !== './routes'
-            ? readFileSync(`${dir}/+client.js`, 'utf-8')
+            ? (await minify(readFileSync(`${dir}/+client.js`, 'utf-8'))).code
             : '';
     active_context = null;
     return `<!DOCTYPE html>
