@@ -158,7 +158,9 @@ function generate_all_types() {
         }
     }
 }
-generate_all_types();
+if (DEV) {
+    generate_all_types();
+}
 
 /**
  * Generates type declarations for a certain path.
@@ -486,7 +488,7 @@ async function gather_all_contexts(path, error = null) {
  */
 function gather_all_context_types(path) {
     let dir = path;
-    /** @type {Record<string, Record<string, any>>} */
+    /** @type {Record<string, Record<string, string>>} */
     const context = {};
     if (parse(path).base === '+error') {
         context.error = { message: 'string', status: 'number' };
