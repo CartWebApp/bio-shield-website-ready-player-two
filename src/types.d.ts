@@ -13,9 +13,7 @@ export interface __Request<Params extends {}> {
 export type __LoadFunction<Request, T extends {} | null | void> = (
     request: Request
 ) => T | Promise<T>;
-type Prettify<T> = {
-    [K in keyof T]: T[K];
-}
+
 type ___IntersectNonNull<
     T extends Array<null | void | {}>,
     Acc = null
@@ -32,6 +30,7 @@ type ___IntersectNonNull<
       >
     : Acc;
 
-export type __IntersectNonNull<T extends Array<null | {} | void>> = {
+/** @internal */
+export type __MergeContext<T extends Array<null | {} | void>> = {
     [K in keyof ___IntersectNonNull<T>]: ___IntersectNonNull<T>[K];
 };

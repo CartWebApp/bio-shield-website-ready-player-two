@@ -201,10 +201,10 @@ function generate_types(path) {
         }
         dir = next;
     }
-    let type_declarations = `import type { __Request, __LoadFunction, __IntersectNonNull } from \'#__types\';\nexport {};\n`;
+    let type_declarations = `import type { __Request, __LoadFunction, __MergeContext } from \'#__types\';\nexport {};\n`;
     if (Object.keys(context.context).length > 0) {
         const ctx = context.context;
-        type_declarations += `type Context = __IntersectNonNull<[{\n`;
+        type_declarations += `type Context = __MergeContext<[{\n`;
         for (const key in ctx) {
             type_declarations += `\t${
                 regex_is_valid_identifier.test(key)
@@ -241,7 +241,7 @@ function generate_types(path) {
             type_declarations += `\t// @ts-ignore\n\texport function useParams<K extends keyof Params>(param: K): Params[K];\n`;
         }
         type_declarations += `\t// @ts-ignore\n\texport function useParams(): Params;\n`;
-        type_declarations += `}\ntype Context = __IntersectNonNull<[{}${context.load_fns
+        type_declarations += `}\ntype Context = __MergeContext<[{}${context.load_fns
             .map(
                 load_fn =>
                     `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
