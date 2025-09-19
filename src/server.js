@@ -330,6 +330,7 @@ function is_error_object(err) {
 }
 
 app.use(async (req, res, next) => {
+    console.log('running');
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
      */
