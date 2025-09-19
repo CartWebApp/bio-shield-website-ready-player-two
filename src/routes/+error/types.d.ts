@@ -5,7 +5,7 @@ type Context = __IntersectNonNull<[{
 		message: string;
 		status: number;
 	};
-}]>
+}]>;
 // @ts-ignore
 declare module '#server' {
 	export function useContext(): Context;

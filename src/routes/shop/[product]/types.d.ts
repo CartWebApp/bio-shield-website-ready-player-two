@@ -4,7 +4,7 @@ type Context = __IntersectNonNull<[{
 	products: {
 		['bio-shield-spray']: typeof import('../(products)/bio-shield-spray.js').default;
 	};
-}, Awaited<ReturnType<typeof import('./+load.js').default>>]>
+}, Awaited<ReturnType<typeof import('./+load.js').default>>]>;
 // @ts-ignore
 declare module '#server' {
 	export function useContext(): Context;

@@ -4,7 +4,7 @@ export {};
 declare module '#server' {
 	export function useContext(): Context;
 }
-type Context = __IntersectNonNull<[{}]>
+type Context = __IntersectNonNull<[{}]>;
 declare global {
 	export function useContext(): Context;
 	export function useParams(): Params;

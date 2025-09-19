@@ -3,6 +3,7 @@ import { active_context } from './server.js';
 
 /**
  * @param {number} status
+ * @returns {never}
  */
 export function error(status, message = STATUS_CODES[status]) {
     throw {

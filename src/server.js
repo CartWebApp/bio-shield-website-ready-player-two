@@ -223,7 +223,7 @@ function generate_types(path) {
                 load_fn =>
                     `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
             )
-            .join('')}]>\n// @ts-ignore\ndeclare module '#server' {\n`;
+            .join('')}]>;\n// @ts-ignore\ndeclare module '#server' {\n`;
         type_declarations += `\texport function useContext(): Context;\n`;
         type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
         type_declarations += '}\ndeclare global {\n';
@@ -236,7 +236,7 @@ function generate_types(path) {
                 load_fn =>
                     `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
             )
-            .join('')}]>\ndeclare global {\n`;
+            .join('')}]>;\ndeclare global {\n`;
     }
     type_declarations += `\texport function useContext(): Context;\n`;
     if (params.length > 0) {
