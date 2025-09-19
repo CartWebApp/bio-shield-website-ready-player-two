@@ -365,7 +365,8 @@ app.use(async (req, res, next) => {
     if (req.path === 'events' && DEV) return next();
     const path = `./src/routes${req.path}`;
     const prefetching = typeof req.query.prefetching === 'string';
-    console.log(path, readdirSync('.'));
+    console.log(path);
+    console.log(readdirSync('.'));
     if (existsSync(path)) {
         console.log('exists');
         const stats = statSync(path);
