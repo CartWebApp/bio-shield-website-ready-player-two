@@ -1,6 +1,6 @@
-import type { __Request, __LoadFunction, __MergeContext } from '#__types';
+import type { __Request, __LoadFunction, __IntersectNonNull } from '#__types';
 export {};
-type Context = __MergeContext<[{
+type Context = __IntersectNonNull<[{
 	error: {
 		message: string;
 		status: number;

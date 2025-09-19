@@ -1,6 +1,6 @@
-import type { __Request, __LoadFunction, __MergeContext } from '#__types';
+import type { __Request, __LoadFunction, __IntersectNonNull } from '#__types';
 export {};
-type Context = __MergeContext<[{
+type Context = __IntersectNonNull<[{
 	products: {
 		['bio-shield-spray']: typeof import('../(products)/bio-shield-spray.js').default;
 	};
