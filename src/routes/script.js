@@ -1,6 +1,6 @@
 // @ts-check
 
-/** @typedef {{ body: DocumentFragment; title: string }} CacheEntry */
+/** @typedef {{ body: DocumentFragment; title: string; scripts: HTMLScriptElement[] }} CacheEntry */
 /** @type {Map<string, CacheEntry>} */
 const cache = new Map();
 const parser = new DOMParser();
@@ -33,6 +33,25 @@ async function navigate(url) {
     document.body.replaceChildren(
         document.adoptNode(entry.body.cloneNode(true))
     );
+    for (const script of document.head.querySelectorAll('script')) {
+        script.remove();
+    }
+    for (const script of entry.scripts) {
+        const elem = document.createElement('script');
+        Object.assign(elem, {
+            ...(script.src.length > 0
+                ? script.type.length > 0
+                    ? { src: script.src, type: script.type }
+                    : { src: script.src }
+                : script.type.length > 0
+                ? { type: script.type }
+                : {}),
+            async: script.async,
+            defer: script.defer,
+            text: script.text
+        });
+        document.body.append(elem);
+    }
     await init();
 }
 
@@ -42,11 +61,14 @@ async function navigate(url) {
  * @returns {Promise<void>}
  */
 async function prefetch(url, dependents = []) {
-    const res = await fetch(url);
+    const instance = new URL(url, location.href);
+    instance.searchParams.append('prefetching', 'true');
+    const res = await fetch(instance.toString());
     const text = await res.text();
     const tree = parser.parseFromString(text, 'text/html');
-    const { body, title } = tree;
-    cache.set(url, { body: template(body.innerHTML), title });
+    const { body, title, head } = tree;
+    const [...scripts] = head.querySelectorAll('script');
+    cache.set(url, { body: template(body.innerHTML), title, scripts });
     const handle = handler(url);
     for (const link of dependents) {
         add_event_listener.call(link, 'click', handle);
@@ -98,7 +120,8 @@ add_event_listener.call(
     () => {
         cache.set(location.href, {
             body: template(document.body.innerHTML),
-            title: document.title
+            title: document.title,
+            scripts: [...document.head.querySelectorAll('script')]
         });
     },
     { once: true }

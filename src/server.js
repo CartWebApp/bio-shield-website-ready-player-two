@@ -181,6 +181,7 @@ function generate_types(path) {
 
 app.use(async (req, res, next) => {
     const path = `./routes${req.path}`;
+    const prefetching = typeof req.query.prefetching === 'string';
     if (existsSync(path)) {
         const stats = statSync(path);
         if (stats.isFile()) {
@@ -193,10 +194,16 @@ app.use(async (req, res, next) => {
             const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
             res.send(
-                await transform(template, html_path, {
-                    path: html_path,
-                    params: {}
-                })
+                await transform(
+                    template,
+                    html_path,
+                    {
+                        path: html_path,
+                        params: {}
+                    },
+                    null,
+                    prefetching
+                )
             );
         }
         return;
@@ -215,7 +222,15 @@ app.use(async (req, res, next) => {
                 }index.html`;
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
-                res.send(await transform(template, html_path, parsed_params));
+                res.send(
+                    await transform(
+                        template,
+                        html_path,
+                        parsed_params,
+                        null,
+                        prefetching
+                    )
+                );
             }
             return;
         } else {
@@ -223,10 +238,19 @@ app.use(async (req, res, next) => {
             if (error_path !== null) {
                 const template = readFileSync(error_path, 'utf-8');
                 res.send(
-                    await transform(template, error_path, {
-                        path: error_path,
-                        params: parsed_params.params
-                    })
+                    await transform(
+                        template,
+                        error_path,
+                        {
+                            path: error_path,
+                            params: parsed_params.params
+                        },
+                        {
+                            message: 'Not found',
+                            status: 404
+                        },
+                        prefetching
+                    )
                 );
                 return;
             }
@@ -237,13 +261,19 @@ app.use(async (req, res, next) => {
     if (error_path !== null) {
         const template = readFileSync(error_path, 'utf-8');
         res.send(
-            await transform(template, error_path, {
-                path: error_path,
-                params: {}
-            }, {
-                message: 'Not found',
-                status: 404
-            })
+            await transform(
+                template,
+                error_path,
+                {
+                    path: error_path,
+                    params: {}
+                },
+                {
+                    message: 'Not found',
+                    status: 404
+                },
+                prefetching
+            )
         );
         return;
     }
@@ -306,7 +336,7 @@ function gather_all_context_types(path) {
     if (parse(path).base === '+error') {
         context.error = { message: 'string', status: 'number' };
     }
-    let relative = '..';
+    let relative = '.';
     while (dir.length > 1) {
         const contexts = readdirSync(dir).filter(
             path =>
@@ -323,7 +353,7 @@ function gather_all_context_types(path) {
                 ] = `typeof import('${relative}/${folder}/${file}').default`;
             }
         }
-        relative += '/..';
+        relative += relative === '.' ? '.' : '/..';
         ({ dir } = parse(dir));
     }
     return context;
@@ -335,11 +365,25 @@ function gather_all_context_types(path) {
  * @param {string} url
  * @param {ReturnType<typeof params>} [params]
  * @param {{ message: string; status: number } | null} [error]
+ * @param {boolean} [prefetching]
  */
-async function transform(template, url, params = { path: '', params: {} }, error = null) {
+async function transform(
+    template,
+    url,
+    params = { path: '', params: {} },
+    error = null,
+    prefetching = false
+) {
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
     const dir = parse(url).dir;
+    let main_script = existsSync(`./routes/script.js`)
+        ? readFileSync('./routes/script.js', 'utf-8')
+        : '';
+    let script =
+        existsSync(`${dir}/script.js`) && dir !== './routes'
+            ? readFileSync(`${dir}/script.js`, 'utf-8')
+            : '';
     const context = await gather_all_contexts(dir, error);
     return `<!DOCTYPE html>
 <html lang="en">
@@ -352,9 +396,10 @@ async function transform(template, url, params = { path: '', params: {} }, error
         <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
         <link rel="manifest" href="/static/icons/site.webmanifest">
         <link rel="stylesheet" href="/styles.css" />
-        <script src="/script.js" type="module"></script>${
-            DEV
-                ? `
+        ${prefetching ? '' : `<script type="module">${main_script}</script>`}
+        <script type="module">${script}</script>${
+        DEV
+            ? `
         <script>
             fetch(\`/events?path=${encodeURIComponent(
                 params.path.replace(/^\.\/routes\//, '')
@@ -365,8 +410,8 @@ async function transform(template, url, params = { path: '', params: {} }, error
                     location.reload();
                 });
         </script>`
-                : ''
-        }
+            : ''
+    }
         <script>
             (function() {
                 const empty = Symbol();

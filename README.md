@@ -67,6 +67,14 @@ const org = useParams('org'),
     repo = useParams('repo');
 ```
 
+### Errors
+
+In the case that an HTTP error is thrown (most likely 404 not found), you can add custom error pages using a `+error/index.html` route. When you use this, an `error` context will be added, which will be an object with properties `{ message: string; status: number }`.
+
+### Scripts
+
+If you have a `script.js` file in the same folder as a route, it will be inlined with your `index.html` without the need to `<script src` it. Additionally, the root `script.js` will be inlined into every route.
+
 ## Types
 
 To appease TypeScript, we generate ambient `d.ts` files on the fly for each route. This allows us to have typed `useContext` and `useParams`. You can use these type declarations via a [triple-slash directive](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html):
