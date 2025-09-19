@@ -14,7 +14,7 @@ import {
 import { DEV } from 'esm-env';
 import express from 'express';
 import { uneval, parse as deserialize, stringify } from 'devalue';
-import { parse, sep } from 'path';
+import { parse, sep, join } from 'path';
 import kleur from 'kleur';
 import { STATUS_CODES } from 'http';
 import { minify } from 'terser';
@@ -35,7 +35,7 @@ if (chokidar) {
         const _path = decodeURIComponent(
             /** @type {string} */ (req.query.path)
         );
-        const path = `src/routes/${_path}`;
+        const path = join(process.cwd(), 'src', 'routes', ..._path.split('/'));
 
         if (!watchers.has(path)) {
             watchers.set(path, []);
@@ -118,22 +118,26 @@ function params(path) {
 }
 
 function generate_all_types() {
-    for (const file of readdirSync('./src/routes', { recursive: true })) {
+    for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
+        recursive: true
+    })) {
         if (typeof file !== 'string') continue;
-        if (file.endsWith('index.html')) {
+        if (parse(file).base === 'index.html') {
             // i've found that `fs.writeFileSync` fails randomly after ~5 mins of inactivity
             // so this'll stop that from crashing the server
             try {
-                const dir = `./routes/${file
-                    .split(sep)
-                    .slice(0, -1)
-                    .join('/')}`;
+                const dir = join(
+                    process.cwd(),
+                    'src',
+                    'routes',
+                    ...file.split(sep).slice(0, -1)
+                );
                 const types = generate_types(dir);
                 if (
-                    !existsSync(`${dir}/types.d.ts`) ||
-                    types !== readFileSync(`${dir}/types.d.ts`, 'utf-8')
+                    !existsSync(join(dir, 'index.html')) ||
+                    types !== readFileSync(join(dir, 'index.html'), 'utf-8')
                 ) {
-                    writeFileSync(`${dir}/types.d.ts`, types);
+                    writeFileSync(join(dir, 'index.html'), types);
                 }
                 // because typescript always implicitly `<reference>`s ambient type declarations,
                 // we have to create a tsconfig for each route :|
@@ -269,7 +273,7 @@ async function gather_load_functions(path) {
     /** @type {Array<(request: __Request<Record<string, string>>) => any>} */
     const load_fns = [];
     while (dir.length > 1) {
-        const load_path = `${dir}/+load.js`;
+        const load_path = join(dir, '+load.js');
         if (existsSync(load_path)) {
             const { default: load } = await import(load_path);
             load_fns.push(load);
@@ -288,7 +292,7 @@ function gather_load_function_paths(path) {
     const load_fns = [];
     let relative = '.';
     while (dir.length > 1) {
-        const load_path = `${dir}/+load.js`;
+        const load_path = join(dir, '+load.js');
         if (existsSync(load_path)) {
             load_fns.push(`${relative}/+load.js`);
         }
@@ -363,10 +367,9 @@ app.use(async (req, res, next) => {
         }
     }
     if (req.path === 'events' && DEV) return next();
-    const path = `./src/routes${req.path}`;
+    const path = join(process.cwd(), 'src', 'routes', ...req.path.split('/'));
     const prefetching = typeof req.query.prefetching === 'string';
     console.log(path);
-    console.log(readdirSync('.', { recursive: true }));
     if (existsSync(path)) {
         console.log('exists');
         const stats = statSync(path);
@@ -375,19 +378,17 @@ app.use(async (req, res, next) => {
             res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
             res.sendFile(path, { root: '.' });
         } else {
-            const html_path = `${
-                path + (path.charAt(path.length - 1) === '/' ? '' : '/')
-            }index.html`;
-            const template = readFileSync(html_path, 'utf-8');
+            const html_path = join(path, 'index.html');
+            const template = readFileSync(join(path, 'index.html'), 'utf-8');
             res.contentType('.html');
             try {
                 res.send(
                     await transform(
                         template,
-                        html_path,
+                        join(path, 'index.html'),
                         create_request_object(req, res, {}),
                         {
-                            path: html_path,
+                            path: join(path, 'index.html'),
                             params: {}
                         },
                         null,
@@ -405,7 +406,7 @@ app.use(async (req, res, next) => {
         }
         return;
     } else {
-        const parsed_params = params(path);
+        const parsed_params = params(join(...path.split('/')));
         if (existsSync(parsed_params.path)) {
             const stats = statSync(parsed_params.path);
             if (stats.isFile()) {
@@ -413,9 +414,7 @@ app.use(async (req, res, next) => {
                 res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
             } else {
                 const path = parsed_params.path;
-                const html_path = `${
-                    path + (path.charAt(path.length - 1) === '/' ? '' : '/')
-                }index.html`;
+                const html_path = join(...path.split('/'), 'index.html');
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
                 try {
@@ -456,7 +455,7 @@ app.use(async (req, res, next) => {
 function find_closest_error_path(path) {
     let dir = path;
     while (dir.length > 1) {
-        const error_path = `${dir}/+error/index.html`;
+        const error_path = join(dir, '+error', 'index.html');
         if (existsSync(error_path)) {
             return error_path;
         }
@@ -479,13 +478,13 @@ async function gather_all_contexts(path, error = null) {
     while (dir.length > 1) {
         const contexts = readdirSync(dir).filter(
             path =>
-                statSync(`${dir}/${path}`).isDirectory() &&
+                statSync(join(dir, path)).isDirectory() &&
                 path.match(/^\(.+\)$/)
         );
         for (const folder of contexts) {
-            const path = `${dir}/${folder}`;
+            const path = join(dir, folder);
             for (const file of readdirSync(path)) {
-                const module = await import(`${path}/${file}`);
+                const module = await import(join(path, file));
                 if (module?.default) {
                     (context[folder.slice(1, -1)] ??= {})[file.slice(0, -3)] =
                         module.default;
@@ -566,12 +565,23 @@ async function transform(
     }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
-    let main_script = existsSync(`./src/routes/+client.js`)
-        ? (await minify(readFileSync('./src/routes/+client.js', 'utf-8'))).code
+    let main_script = existsSync(
+        join(process.cwd(), 'src', 'routes', '+client.js')
+    )
+        ? (
+              await minify(
+                  readFileSync(
+                      join(process.cwd(), 'src', 'routes', '+client.js'),
+                      'utf-8'
+                  )
+              )
+          ).code
         : '';
     let script =
-        existsSync(`${dir}/+client.js`) && dir !== './routes'
-            ? (await minify(readFileSync(`${dir}/+client.js`, 'utf-8'))).code
+        existsSync(join(dir, '+client.js')) &&
+        dir !== join(process.cwd(), 'src', 'routes')
+            ? (await minify(readFileSync(join(dir, '+client.js'), 'utf-8')))
+                  .code
             : '';
     active_context = active_params = null;
     return `<!DOCTYPE html>

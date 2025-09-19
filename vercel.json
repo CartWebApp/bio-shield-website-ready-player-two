@@ -3,8 +3,8 @@
     "version": 2,
     "framework": "express",
     "functions": {
-        "api/index.js": {
-            "includeFiles": "src/{*,routes}",
+        "src/server.js": {
+            "includeFiles": "src/**",
             "excludeFiles": "{.git,node_modules}/**"
         }
     }
