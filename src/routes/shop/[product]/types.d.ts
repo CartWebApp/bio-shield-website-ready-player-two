@@ -17,7 +17,7 @@ declare global {
 	export function useParams(): Params;
 }
 interface Params {
-	item: string;
+	product: string;
 }
 export type Request = __Request<Params>;
 export type LoadFunction<T extends {} | null | void> = __LoadFunction<Request, T>;

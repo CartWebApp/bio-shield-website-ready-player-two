@@ -6,10 +6,13 @@ import { error, useContext } from '#server';
 /** @type {LoadFunction<{ item: Product }>} */
 export default function load(request) {
     const { products } = useContext();
-    error(500);
+    const product = /** @type {keyof typeof products} */ (
+        request.params.product
+    );
+    if (!Object.hasOwn(products, product)) {
+        error(404);
+    }
     return {
-        item: products[
-            /** @type {keyof typeof products} */ (request.params.item)
-        ]
+        item: products[product]
     };
 }
