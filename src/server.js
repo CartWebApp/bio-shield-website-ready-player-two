@@ -35,7 +35,7 @@ if (chokidar) {
         const _path = decodeURIComponent(
             /** @type {string} */ (req.query.path)
         );
-        const path = `routes/${_path}`;
+        const path = `src/routes/${_path}`;
 
         if (!watchers.has(path)) {
             watchers.set(path, []);
@@ -64,7 +64,7 @@ if (chokidar) {
         });
         arr.push(res);
     });
-    chokidar.watch('./routes').on('all', (event, path) => {
+    chokidar.watch('./src/routes').on('all', (event, path) => {
         if (path.endsWith('types.d.ts')) return;
         // TODO do fine-grained type updates if possible
         generate_all_types();
@@ -118,7 +118,7 @@ function params(path) {
 }
 
 function generate_all_types() {
-    for (const file of readdirSync('./routes', { recursive: true })) {
+    for (const file of readdirSync('./src/routes', { recursive: true })) {
         if (typeof file !== 'string') continue;
         if (file.endsWith('index.html')) {
             // i've found that `fs.writeFileSync` fails randomly after ~5 mins of inactivity
@@ -330,6 +330,7 @@ function is_error_object(err) {
 }
 
 app.use(async (req, res, next) => {
+    console.log('running');
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
      */
@@ -362,9 +363,12 @@ app.use(async (req, res, next) => {
         }
     }
     if (req.path === 'events' && DEV) return next();
-    const path = `./routes${req.path}`;
+    const path = `./src/routes${req.path}`;
     const prefetching = typeof req.query.prefetching === 'string';
+    console.log(path);
+    console.log(readdirSync('.', { recursive: true }));
     if (existsSync(path)) {
+        console.log('exists');
         const stats = statSync(path);
         if (stats.isFile()) {
             const type = path.split('.').at(-1);
@@ -562,8 +566,8 @@ async function transform(
     }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
-    let main_script = existsSync(`./routes/+client.js`)
-        ? (await minify(readFileSync('./routes/+client.js', 'utf-8'))).code
+    let main_script = existsSync(`./src/routes/+client.js`)
+        ? (await minify(readFileSync('./src/routes/+client.js', 'utf-8'))).code
         : '';
     let script =
         existsSync(`${dir}/+client.js`) && dir !== './routes'
@@ -633,10 +637,14 @@ async function transform(
 </html>`;
 }
 
-app.listen(3000, () => {
-    console.log(
-        `${kleur.gray('Server running at ')}${kleur.green(
-            kleur.bold('http://localhost:3000')
-        )}`
-    );
-});
+if (DEV) {
+    app.listen(3000, () => {
+        console.log(
+            `${kleur.gray('Server running at ')}${kleur.green(
+                kleur.bold('http://localhost:3000')
+            )}`
+        );
+    });
+}
+
+export default app;
