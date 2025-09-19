@@ -597,7 +597,6 @@ async function transform(
         />
     </head>
     <body>
-        <!-- Navigation Bar -->
         <nav>
             <a href="/"><img src="/static/logo.svg" alt="Company Logo" /></a>
             <span class="links"
