@@ -4,7 +4,7 @@
     "framework": "express",
     "functions": {
         "api/index.js": {
-            "includeFiles": "/src/**"
+            "includeFiles": "**/**"
         }
     }
 }
