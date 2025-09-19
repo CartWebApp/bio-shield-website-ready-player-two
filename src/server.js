@@ -126,26 +126,34 @@ function generate_all_types() {
                     .split(sep)
                     .slice(0, -1)
                     .join('/')}`;
-                writeFileSync(`${dir}/types.d.ts`, generate_types(dir));
+                const types = generate_types(dir);
+                if (
+                    !existsSync(`${dir}/types.d.ts`) ||
+                    types !== readFileSync(`${dir}/types.d.ts`, 'utf-8')
+                ) {
+                    writeFileSync(`${dir}/types.d.ts`, types);
+                }
                 // because typescript always implicitly `<reference>`s ambient type declarations,
                 // we have to create a tsconfig for each route :|
-                writeFileSync(
-                    `${dir}/tsconfig.json`,
-                    JSON.stringify({
-                        compilerOptions: {
-                            target: 'ES2024',
-                            checkJs: true,
-                            allowJs: true,
-                            strict: true,
-                            moduleResolution: 'nodenext',
-                            module: 'nodenext',
-                            resolveJsonModule: true,
-                            noEmit: true
-                        },
-                        include: ['*', '*/*'],
-                        exclude: []
-                    })
-                );
+                if (!existsSync(`${dir}/tsconfig.json`)) {
+                    writeFileSync(
+                        `${dir}/tsconfig.json`,
+                        JSON.stringify({
+                            compilerOptions: {
+                                target: 'ES2024',
+                                checkJs: true,
+                                allowJs: true,
+                                strict: true,
+                                moduleResolution: 'nodenext',
+                                module: 'nodenext',
+                                resolveJsonModule: true,
+                                noEmit: true
+                            },
+                            include: ['*', '*/*'],
+                            exclude: []
+                        })
+                    );
+                }
             } catch {}
         }
     }
