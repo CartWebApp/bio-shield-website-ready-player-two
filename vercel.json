@@ -5,7 +5,7 @@
     "functions": {
         "api/index.js": {
             "includeFiles": "**/**",
-            "excludeFiles": ".git"
+            "excludeFiles": ".git/**"
         }
     }
 }
