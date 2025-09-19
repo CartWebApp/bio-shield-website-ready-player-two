@@ -633,12 +633,14 @@ async function transform(
 </html>`;
 }
 
-app.listen(3000, () => {
-    console.log(
-        `${kleur.gray('Server running at ')}${kleur.green(
-            kleur.bold('http://localhost:3000')
-        )}`
-    );
-});
+if (DEV) {
+    app.listen(3000, () => {
+        console.log(
+            `${kleur.gray('Server running at ')}${kleur.green(
+                kleur.bold('http://localhost:3000')
+            )}`
+        );
+    });
+}
 
 export default app;

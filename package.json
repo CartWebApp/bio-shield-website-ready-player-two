@@ -31,7 +31,8 @@
         "esm-env": "^1.2.2",
         "express": "^5.1.0",
         "kleur": "^4.1.5",
-        "terser": "^5.44.0"
+        "terser": "^5.44.0",
+        "vercel": "^48.1.0"
     },
     "devDependencies": {
         "chokidar": "^4.0.3"
