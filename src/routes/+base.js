@@ -1,5 +1,7 @@
 // @ts-check
 
+// @ts-expect-error this isn't pretty, but it's faster than having a leaky array of `<a>` elements
+HTMLElement.prototype.__prefetched = false;
 /** @typedef {{ body: DocumentFragment; title: string; scripts: HTMLScriptElement[] }} CacheEntry */
 /** @type {Map<string, CacheEntry>} */
 const cache = new Map();
@@ -7,6 +9,7 @@ const parser = new DOMParser();
 const add_event_listener = EventTarget.prototype.addEventListener;
 /** @type {string[]} */
 const url_history = [];
+let initializing = false;
 
 /**
  * @param {string} url
@@ -53,7 +56,9 @@ async function navigate(url) {
         document.body.append(elem);
     }
     await Promise.resolve();
+    initializing = true;
     await init();
+    initializing = false;
 }
 
 /**
@@ -73,6 +78,8 @@ async function prefetch(url, dependents = []) {
         cache.set(url, { body: template(body.innerHTML), title, scripts });
         const handle = handler(url);
         for (const link of dependents) {
+            // @ts-expect-error
+            link.__prefetched = true;
             add_event_listener.call(link, 'click', handle);
         }
     } catch {}
@@ -86,6 +93,45 @@ function template(html) {
     template.innerHTML = html;
     return template.content;
 }
+
+const observer = new MutationObserver(mutations => {
+    if (initializing) return;
+    /** @type {Map<string, Array<HTMLAnchorElement | HTMLAreaElement>>} */
+    const dependencies = new Map();
+    for (const mutation of mutations) {
+        console.log(mutation);
+        for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = /** @type {HTMLElement} */ (node);
+                if (element.tagName !== 'A' && element.tagName !== 'AREA')
+                    continue;
+                // @ts-expect-error
+                if (element.__prefetched) continue;
+                const link =
+                    /** @type {HTMLAnchorElement | HTMLAreaElement} */ (
+                        element
+                    );
+                const { href } = link;
+                const url = new URL(href, location.href);
+                if (url.origin !== location.origin) continue;
+                if (!dependencies.has(url.href)) {
+                    dependencies.set(url.href, []);
+                }
+                const links =
+                    /** @type {Array<HTMLAnchorElement | HTMLAreaElement>} */ (
+                        dependencies.get(url.toString())
+                    );
+                links.push(link);
+            }
+        }
+    }
+    const promises = [...dependencies].map(([url, dependents]) =>
+        prefetch(url, dependents)
+    );
+    Promise.allSettled(promises);
+});
+
+observer.observe(document.body, { subtree: true, childList: true });
 
 async function init() {
     const {
