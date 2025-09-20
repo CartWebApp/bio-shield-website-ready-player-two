@@ -5,14 +5,14 @@ Bio-Shield
 <div class="island">
     <h1></h1>
     <br />
-    <div class="split">
-        <div class="images">
+    <article class="split">
+        <section class="images">
             <aside class="carousel"></aside>
-        </div>
-        <div class="info">
+        </section>
+        <section class="info">
             <h2 class="price"></h2>
-        </div>
-    </div>
+        </section>
+    </article>
 </div>
 <style>
     .images {
@@ -42,11 +42,19 @@ Bio-Shield
                 padding: 0.5em;
             }
         }
-        & > img {
-            object-fit: contain;
+        & > div {
+            background: #222;
             height: 40vh;
+            min-width: 21vw;
             margin: auto;
             margin-bottom: 2em;
+            border: 0.05em white;
+            border-style: dotted;
+            & > img {
+                object-fit: contain;
+                height: 40vh;
+                margin: auto;
+            }
         }
     }
     .info {

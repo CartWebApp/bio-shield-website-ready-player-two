@@ -9,9 +9,11 @@ const image_section = /** @type {HTMLDivElement} */ (
 const aside = /** @type {HTMLElement} */ (document.querySelector('aside'));
 const price = /** @type {HTMLHeadingElement} */ (document.querySelector('h2'));
 price.textContent = product.price.toString();
+const wrapper = document.createElement('div');
 const main_image = document.createElement('img');
 main_image.src = product.images[0];
-image_section.append(main_image);
+wrapper.append(main_image);
+image_section.append(wrapper);
 for (const image of product.images) {
     const wrapper = document.createElement('div');
     wrapper.className = 'img_wrapper';
