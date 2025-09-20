@@ -112,3 +112,7 @@ export default function load(request) {
 ```
 
 > Like context, `load` functions cascade, so accessing `/shop/shoes` will call `load` functions from `src/routes/+load.js`, `src/routes/shop/+load.js`, and `src/routes/shop/[item]/+load.js` in that order.
+
+### SSR
+
+While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function.

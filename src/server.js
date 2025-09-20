@@ -20,7 +20,8 @@ import { STATUS_CODES } from 'http';
 import { minify } from 'terser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
-/** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> }} Route */
+/** @typedef {{ body: string; title: string; head: string }} Body */
+/** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> } & Body} Route */
 /** @type {Route | null} */
 export let active_route = null;
 
@@ -576,10 +577,13 @@ async function transform(
     // we clone the context to (1) assert that its valid and (2) avoid mutation during `load` functions
     const active_context = deserialize(stringify(context));
     let active_params = structuredClone(params.params);
-    active_route = {
+    const route = (active_route = {
         context: active_context,
-        request
-    };
+        request,
+        title: '',
+        head: '',
+        body: ''
+    });
     active_route.request.params = active_params;
     const load_fns = await gather_load_functions(dir);
     for (const load of load_fns) {
@@ -635,7 +639,8 @@ async function transform(
 <html lang="en">
     <head>
         ${head}
-        <title>${title}</title>
+        ${route.head}
+        <title>${route.title !== '' ? route.title : title}</title>
         ${
             prefetching ||
             typeof main_script !== 'string' ||
@@ -678,6 +683,7 @@ async function transform(
     </head>
     <body>
         ${base.split(/\n{4}/)[0]}
+        ${route.body}
         ${body}
         ${base.split(/\n{4}/)[1] ?? ''}
     </body>

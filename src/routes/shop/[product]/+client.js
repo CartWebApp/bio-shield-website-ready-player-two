@@ -2,7 +2,6 @@
 const product = useContext('product');
 const h1 = /** @type {HTMLHeadingElement} */ (document.querySelector('h1'));
 h1.textContent = product.name;
-document.title = `${product.name} - Bio-Shield Shop`;
 const image_section = /** @type {HTMLDivElement} */ (
     document.querySelector('.images')
 );
