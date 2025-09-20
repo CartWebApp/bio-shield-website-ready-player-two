@@ -15,7 +15,6 @@ function element(type, props = null, ...children) {
     const elem = document.createElement(type);
     if (props !== null) {
         for (const [key, value] of Object.entries(props)) {
-            console.log(key, value);
             if (key.slice(0, 2) === 'on') {
                 elem.addEventListener(key.slice(2), value);
             } else if (key === 'class') {
