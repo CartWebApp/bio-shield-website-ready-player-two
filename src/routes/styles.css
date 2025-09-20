@@ -130,6 +130,9 @@ nav span a:not(:has(img)) {
             margin: 2em 0 0 49vw;
         }
     }
+    & hr {
+        transform: translateY(-1.5em);
+    }
     & .products {
         display: grid;
         grid-template-columns: repeat(auto-fit, 12em);
