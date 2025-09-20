@@ -592,12 +592,17 @@ async function transform(
                   readFileSync(
                       join(process.cwd(), 'src', 'routes', '+base.js'),
                       'utf-8'
-                  ), { module: true }
+                  ),
+                  { module: true }
               )
           ).code
         : '';
     let script = existsSync(join(dir, '+client.js'))
-        ? (await minify(readFileSync(join(dir, '+client.js'), 'utf-8'), { module: true })).code
+        ? (
+              await minify(readFileSync(join(dir, '+client.js'), 'utf-8'), {
+                  module: true
+              })
+          ).code
         : '';
     active_context = active_params = null;
     return `<!DOCTYPE html>
