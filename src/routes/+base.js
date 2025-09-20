@@ -99,7 +99,6 @@ const observer = new MutationObserver(mutations => {
     /** @type {Map<string, Array<HTMLAnchorElement | HTMLAreaElement>>} */
     const dependencies = new Map();
     for (const mutation of mutations) {
-        console.log(mutation);
         for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 const element = /** @type {HTMLElement} */ (node);
