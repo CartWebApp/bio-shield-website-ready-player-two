@@ -6,11 +6,11 @@ declare module '#server' {
 	// @ts-ignore
 	export function useParams(): Params;
 }
-type Context = __MergeContext<[{}]>;
+export type Context = __MergeContext<[{}]>;
 declare global {
 	export function useContext(): Context;
 	export function useParams(): Params;
 }
-interface Params {}
+export interface Params {}
 export type Request = __Request<Params>;
 export type LoadFunction<T extends {} | null | void> = __LoadFunction<Request, T>;

@@ -185,7 +185,7 @@ function generate_types(path) {
     function generate_param_type(params) {
         let type_declarations = '';
         if (params.length > 0) {
-            type_declarations += `interface Params {\n`;
+            type_declarations += `export interface Params {\n`;
             for (const param of params) {
                 type_declarations += `\t${
                     regex_is_valid_identifier.test(param)
@@ -195,7 +195,7 @@ function generate_types(path) {
             }
             type_declarations += `}\n`;
         } else {
-            type_declarations += `interface Params {}\n`;
+            type_declarations += `export interface Params {}\n`;
         }
         return type_declarations;
     }
@@ -213,7 +213,7 @@ function generate_types(path) {
     let type_declarations = `import type { __Request, __LoadFunction, __MergeContext } from \'#__types\';\nexport {};\n`;
     if (Object.keys(context.context).length > 0) {
         const ctx = context.context;
-        type_declarations += `type Context = __MergeContext<[{\n`;
+        type_declarations += `export type Context = __MergeContext<[{\n`;
         for (const key in ctx) {
             type_declarations += `\t${
                 regex_is_valid_identifier.test(key)
@@ -253,7 +253,7 @@ function generate_types(path) {
             type_declarations += `\t// @ts-ignore\n\texport function useParams<K extends keyof Params>(param: K): Params[K];\n`;
         }
         type_declarations += `\t// @ts-ignore\n\texport function useParams(): Params;\n`;
-        type_declarations += `}\ntype Context = __MergeContext<[{}${context.load_fns
+        type_declarations += `}\nexport type Context = __MergeContext<[{}${context.load_fns
             .map(
                 load_fn =>
                     `, Awaited<ReturnType<typeof import('${load_fn.replace(
@@ -584,7 +584,7 @@ async function transform(
     }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
-    let main_script = existsSync(
+    const main_script = existsSync(
         join(process.cwd(), 'src', 'routes', '+base.js')
     )
         ? (
@@ -597,25 +597,31 @@ async function transform(
               )
           ).code
         : '';
-    let script = existsSync(join(dir, '+client.js'))
+    const script = existsSync(join(dir, '+client.js'))
         ? (
               await minify(readFileSync(join(dir, '+client.js'), 'utf-8'), {
                   module: true
               })
           ).code
         : '';
+    const head = existsSync(join(process.cwd(), 'src', 'routes', '+head.html'))
+        ? readFileSync(
+              join(process.cwd(), 'src', 'routes', '+head.html'),
+              'utf-8'
+          )
+        : '';
+    const base = existsSync(join(process.cwd(), 'src', 'routes', '+base.html'))
+        ? readFileSync(
+              join(process.cwd(), 'src', 'routes', '+base.html'),
+              'utf-8'
+          )
+        : '';
     active_context = active_params = null;
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        ${head}
         <title>${title}</title>
-        <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
-        <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
-        <link rel="manifest" href="/static/icons/site.webmanifest">
-        <link rel="stylesheet" href="/styles.css" />
         ${
             prefetching ||
             typeof main_script !== 'string' ||
@@ -655,19 +661,11 @@ async function transform(
                 };
             }());
         </script>
-        <link rel="preconnect" href="https://rsms.me/" />
-        <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
     </head>
     <body>
-        <nav>
-            <a href="/"><img src="/static/logo.svg" alt="Company Logo" /></a>
-            <span class="links"
-                ><a href="/about">About</a>
-                <a href="/shop">Our Products</a>
-                <a href="/contact">Contact</a></span
-            >
-        </nav>
+        ${base.split(/\n{4}/)[0]}
         ${body}
+        ${base.split(/\n{4}/)[1]}
     </body>
 </html>`;
 }

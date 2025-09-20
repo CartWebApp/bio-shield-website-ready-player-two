@@ -1,2 +1,2 @@
 /// <reference path="./types.d.ts" />
-const item = useContext('item');
+const item = useContext('product');

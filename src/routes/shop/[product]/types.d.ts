@@ -1,6 +1,6 @@
 import type { __Request, __LoadFunction, __MergeContext } from '#__types';
 export {};
-type Context = __MergeContext<[{
+export type Context = __MergeContext<[{
 	products: {
 		['bio-shield-bracelet']: typeof import('..\\(products)\\bio-shield-bracelet.js').default;
 		['bio-shield-bundle']: typeof import('..\\(products)\\bio-shield-bundle.js').default;
@@ -23,7 +23,7 @@ declare global {
 	export function useParams<K extends keyof Params>(key: K): Params[K];
 	export function useParams(): Params;
 }
-interface Params {
+export interface Params {
 	product: string;
 }
 export type Request = __Request<Params>;

@@ -21,14 +21,16 @@ type ___IntersectNonNull<
     ? ___IntersectNonNull<
           Rest,
           First extends {}
-              ? Acc extends null
-                  ? First
-                  : First & Acc
-              : Acc extends null
-              ? {}
-              : Acc
+              ? Acc extends {}
+                  ? First & Acc
+                  : First
+              : Acc extends {}
+              ? Acc
+              : {}
       >
-    : Acc;
+    : Acc extends {}
+    ? Acc
+    : {};
 
 /** @internal */
 export type __MergeContext<T extends Array<null | {} | void>> = {

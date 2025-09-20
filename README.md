@@ -75,6 +75,10 @@ In the case that an HTTP error is thrown (most likely 404 not found), you can ad
 
 If you have a `+client.js` file in the same folder as a route, it will be inlined with your `index.html` without the need to `<script src` it. Additionally, a `+base.js` file at the root route will be inlined with every route.
 
+### HTML
+
+Since it's very likely that your `<head>` contents will be the same for each page, you can declare `<head>` contents in `src/routes/+head.html`. These will be added to each route. Additionally, for `<body>` content such as navbars and footers, you can use `src/routes/+base.html`. Contents before 4 line breaks will be placed at the top of the `<body>`, contents after will be placed at the bottom.
+
 ## Types
 
 To appease TypeScript, we generate ambient `d.ts` files on the fly for each route. This allows us to have typed `useContext` and `useParams`. You can use these type declarations via a [triple-slash directive](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html):
