@@ -1,6 +1,6 @@
 // @ts-check
 
-// @ts-expect-error this isn't pretty, but it's faster than having a leaky array of `<a>` elements
+// @ts-expect-error this isn't pretty, but it's better than having a leaky array of `<a>` elements
 HTMLElement.prototype.__prefetched = false;
 /** @typedef {{ body: DocumentFragment; title: string; scripts: HTMLScriptElement[] }} CacheEntry */
 /** @type {Map<string, CacheEntry>} */
