@@ -1,3 +1,8 @@
+@font-face {
+    font-family: 'DM Serif Display';
+    src: url('/static/fonts/DMSerifDisplay-Regular.ttf');
+}
+
 :root {
     --base: #67bf79;
     --base-dark: #57a66a;

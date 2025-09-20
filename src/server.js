@@ -86,7 +86,10 @@ function params(path) {
     /** @type {Record<string, string>} */
     const params = {};
     while ([...dir].filter(char => char === sep).length > 1) {
-        while (!existsSync(dir) && [...dir].filter(char => char === sep).length > 1) {
+        while (
+            !existsSync(dir) &&
+            [...dir].filter(char => char === sep).length > 1
+        ) {
             child = dir;
             ({ dir } = parse(dir));
             i--;
@@ -96,8 +99,9 @@ function params(path) {
         }
         const has_params = readdirSync(dir).find(
             folder =>
-                statSync(join(dir, folder), { throwIfNoEntry: false })?.isDirectory() &&
-                /^\[.+\]$/.test(folder)
+                statSync(join(dir, folder), {
+                    throwIfNoEntry: false
+                })?.isDirectory() && /^\[.+\]$/.test(folder)
         );
         if (typeof has_params === 'string') {
             const param = has_params.slice(1, -1);
@@ -161,7 +165,7 @@ function generate_all_types() {
                     })
                 );
             }
-        } catch(err) {
+        } catch (err) {
             console.error(err);
         }
     }
@@ -228,7 +232,10 @@ function generate_types(path) {
         type_declarations += `}${context.load_fns
             .map(
                 load_fn =>
-                    `, Awaited<ReturnType<typeof import('${load_fn.replace(/\\/g, '\\\\')}').default>>`
+                    `, Awaited<ReturnType<typeof import('${load_fn.replace(
+                        /\\/g,
+                        '\\\\'
+                    )}').default>>`
             )
             .join('')}]>;\n// @ts-ignore\ndeclare module '#server' {\n`;
         type_declarations += `\texport function useContext(): Context;\n`;
@@ -249,7 +256,10 @@ function generate_types(path) {
         type_declarations += `}\ntype Context = __MergeContext<[{}${context.load_fns
             .map(
                 load_fn =>
-                    `, Awaited<ReturnType<typeof import('${load_fn.replace(/\\/g, '\\\\')}').default>>`
+                    `, Awaited<ReturnType<typeof import('${load_fn.replace(
+                        /\\/g,
+                        '\\\\'
+                    )}').default>>`
             )
             .join('')}]>;\ndeclare global {\n`;
     }
@@ -276,7 +286,9 @@ async function gather_load_functions(path) {
     while ([...dir].filter(char => char === sep).length > 1) {
         const load_path = join(dir, '+load.js');
         if (existsSync(load_path)) {
-            const { default: load } = await import(`file:${sep}${sep}${load_path}`);
+            const { default: load } = await import(
+                `file:${sep}${sep}${load_path}`
+            );
             load_fns.push(load);
         }
         ({ dir } = parse(dir));
@@ -406,7 +418,9 @@ app.use(async (req, res, next) => {
     } else {
         const parsed_params = params(path);
         if (existsSync(parsed_params.path)) {
-            const stats = statSync(parsed_params.path, { throwIfNoEntry: false });
+            const stats = statSync(parsed_params.path, {
+                throwIfNoEntry: false
+            });
             if (stats?.isFile()) {
                 const type = parsed_params.path.split('.').at(-1);
                 res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
@@ -476,13 +490,16 @@ async function gather_all_contexts(path, error = null) {
     while ([...dir].filter(char => char === sep).length > 1) {
         const contexts = readdirSync(dir).filter(
             path =>
-                statSync(join(dir, path), { throwIfNoEntry: false })?.isDirectory() &&
-                path.match(/^\(.+\)$/)
+                statSync(join(dir, path), {
+                    throwIfNoEntry: false
+                })?.isDirectory() && path.match(/^\(.+\)$/)
         );
         for (const folder of contexts) {
             const path = join(dir, folder);
             for (const file of readdirSync(path)) {
-                const module = await import(`file:${sep}${sep}${join(path, file)}`);
+                const module = await import(
+                    `file:${sep}${sep}${join(path, file)}`
+                );
                 if (module?.default) {
                     (context[folder.slice(1, -1)] ??= {})[file.slice(0, -3)] =
                         module.default;
@@ -509,8 +526,9 @@ function gather_all_context_types(path) {
     while ([...dir].filter(char => char === sep).length > 1) {
         const contexts = readdirSync(dir).filter(
             path =>
-                statSync(join(dir, path), { throwIfNoEntry: false })?.isDirectory() &&
-                path.match(/^\(.+\)$/)
+                statSync(join(dir, path), {
+                    throwIfNoEntry: false
+                })?.isDirectory() && path.match(/^\(.+\)$/)
         );
         for (const folder of contexts) {
             const path = join(dir, folder);
@@ -519,7 +537,10 @@ function gather_all_context_types(path) {
                 const file_key = file.slice(0, -3);
                 (context[context_key] ??= {})[
                     file_key
-                ] = `typeof import('${(`${relative}${sep}${folder}${sep}${file}`).replace(/\\/g, '\\\\')}').default`;
+                ] = `typeof import('${`${relative}${sep}${folder}${sep}${file}`.replace(
+                    /\\/g,
+                    '\\\\'
+                )}').default`;
             }
         }
         relative += relative === '.' ? '.' : `${sep}..`;
@@ -624,12 +645,6 @@ async function transform(
         </script>
         <link rel="preconnect" href="https://rsms.me/" />
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap"
-            rel="stylesheet"
-        />
     </head>
     <body>
         <nav>
