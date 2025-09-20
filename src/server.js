@@ -27,7 +27,7 @@ export let active_route = null;
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
     // it does this using a cheap copy of Server-Sent Events (since actual SSE wasn't working for me)
-    // the client-side code for this can be found in `routes/dev.js`
+    // the client-side code for this can be found in {@link transform `transform`}'s return value.
     /** @type {Map<string, Array<Response>>} */
     const watchers = new Map();
     app.get('/events', (req, res) => {
@@ -148,20 +148,24 @@ function generate_all_types() {
             if (!existsSync(join(dir, 'tsconfig.json'))) {
                 writeFileSync(
                     join(dir, 'tsconfig.json'),
-                    JSON.stringify({
-                        compilerOptions: {
-                            target: 'ES2024',
-                            checkJs: true,
-                            allowJs: true,
-                            strict: true,
-                            moduleResolution: 'nodenext',
-                            module: 'nodenext',
-                            resolveJsonModule: true,
-                            noEmit: true
+                    JSON.stringify(
+                        {
+                            compilerOptions: {
+                                target: 'ES2024',
+                                checkJs: true,
+                                allowJs: true,
+                                strict: true,
+                                moduleResolution: 'nodenext',
+                                module: 'nodenext',
+                                resolveJsonModule: true,
+                                noEmit: true
+                            },
+                            include: ['*', '*/*'],
+                            exclude: []
                         },
-                        include: ['*', '*/*'],
-                        exclude: []
-                    })
+                        null,
+                        4
+                    )
                 );
             }
         } catch (err) {
