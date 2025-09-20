@@ -130,6 +130,12 @@ nav span a:not(:has(img)) {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
                 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
                 'Helvetica Neue', sans-serif;
+            outline: none;
+            transition: background 0.3s ease;
+            cursor: pointer;
+            &:is(:hover, :active, :open) {
+                background: #2f2f2f;
+            }
         }
         & .sort_by {
             margin: 2em 0 0 49vw;
@@ -168,6 +174,10 @@ nav span a:not(:has(img)) {
         & a {
             text-decoration: none;
             color: white;
+        }
+        & img {
+            height: 8em;
+            object-fit: contain;
         }
     }
 }
