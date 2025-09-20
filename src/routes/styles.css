@@ -9,7 +9,7 @@
 body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
-    background: url('./static/hero.2k.png') no-repeat center/cover;
+    background: url('./static/bg.2k.png') no-repeat center/cover;
     background-position-y: 2em;
     color: white;
     align-items: center;
