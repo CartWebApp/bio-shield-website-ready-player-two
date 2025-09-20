@@ -10,7 +10,7 @@ const list = /** @type {HTMLDivElement} */ (
  * @param {Keys} keys
  * @returns {Readonly<Record<Keys[number], symbol>>}
  */
-export function Enum(...keys) {
+function Enum(...keys) {
     return Object.freeze(
         /** @type {Record<Keys[number], symbol>} */ (
             Object.fromEntries(
