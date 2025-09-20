@@ -6,11 +6,11 @@ import { error, insert, useContext } from '#server';
 /** @type {LoadFunction<{ product: Product }>} */
 export default function load(request) {
     const { products } = useContext();
-    const { product: name } = request.params;
-    if (!Object.hasOwn(products, name)) {
+    const { product: key } = request.params;
+    if (!Object.hasOwn(products, key)) {
         error(404);
     }
-    const product = products[/** @type {keyof Context['products']} */ (name)];
+    const product = products[/** @type {keyof Context['products']} */ (key)];
     insert.title(`${product.name} - Bio-Shield Shop`);
     return {
         product
