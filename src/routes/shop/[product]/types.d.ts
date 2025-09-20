@@ -1,10 +1,10 @@
-import type { __Request, __LoadFunction, __IntersectNonNull } from '#__types';
+import type { __Request, __LoadFunction, __MergeContext } from '#__types';
 export {};
-type Context = __IntersectNonNull<[{
+type Context = __MergeContext<[{
 	products: {
-		['bio-shield-spray']: typeof import('../(products)/bio-shield-spray.js').default;
+		['bio-shield-spray']: typeof import('..\\(products)\\bio-shield-spray.js').default;
 	};
-}, Awaited<ReturnType<typeof import('./+load.js').default>>]>;
+}, Awaited<ReturnType<typeof import('.\\+load.js').default>>]>;
 // @ts-ignore
 declare module '#server' {
 	export function useContext(): Context;

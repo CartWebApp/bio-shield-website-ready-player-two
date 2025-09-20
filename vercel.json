@@ -3,8 +3,8 @@
     "version": 2,
     "framework": "express",
     "functions": {
-        "src/server.js": {
-            "includeFiles": "src/**",
+        "api/index.js": {
+            "includeFiles": "src/{**,**/*.{html,png,ico,webmanifest,svg,jpg}",
             "excludeFiles": "{.git,node_modules}/**"
         }
     }

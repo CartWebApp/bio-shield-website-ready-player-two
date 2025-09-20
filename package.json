@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "cd src && node -C development server.js"
+        "dev": "node -C development ./src/server.js"
     },
     "repository": {
         "type": "git",

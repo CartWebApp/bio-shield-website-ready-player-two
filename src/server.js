@@ -39,7 +39,7 @@ if (chokidar) {
 
         if (!watchers.has(path)) {
             watchers.set(path, []);
-            chokidar.watch(`./${path}`).on('change', _path => {
+            chokidar.watch(path).on('change', _path => {
                 if (_path.match(/(tsconfig\.json)|(types\.d\.ts)$/)) return;
                 const time = new Date()
                     .toLocaleTimeString('en-US', { hour12: false })
@@ -81,22 +81,22 @@ if (chokidar) {
 function params(path) {
     let dir = path;
     let child = path;
-    const parts = path.split('/');
+    const parts = path.split(sep);
     let i = parts.length;
     /** @type {Record<string, string>} */
     const params = {};
-    while (dir.length > 1) {
-        while (!existsSync(dir) && dir.length > 1) {
+    while ([...dir].filter(char => char === sep).length > 1) {
+        while (!existsSync(dir) && [...dir].filter(char => char === sep).length > 1) {
             child = dir;
             ({ dir } = parse(dir));
             i--;
         }
-        if (dir.length <= 1) {
+        if ([...dir].filter(char => char === sep).length <= 1) {
             break;
         }
         const has_params = readdirSync(dir).find(
             folder =>
-                statSync(`${dir}/${folder}`).isDirectory() &&
+                statSync(join(dir, folder), { throwIfNoEntry: false })?.isDirectory() &&
                 /^\[.+\]$/.test(folder)
         );
         if (typeof has_params === 'string') {
@@ -113,7 +113,7 @@ function params(path) {
     }
     return {
         params,
-        path: parts.join('/')
+        path: parts.join(sep)
     };
 }
 
@@ -121,53 +121,54 @@ function generate_all_types() {
     for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
         recursive: true
     })) {
-        if (typeof file !== 'string') continue;
-        if (parse(file).base === 'index.html') {
-            // i've found that `fs.writeFileSync` fails randomly after ~5 mins of inactivity
-            // so this'll stop that from crashing the server
-            try {
-                const dir = join(
-                    process.cwd(),
-                    'src',
-                    'routes',
-                    ...file.split(sep).slice(0, -1)
+        if (typeof file !== 'string' || parse(file).base !== 'index.html')
+            continue;
+
+        // i've found that `fs.writeFileSync` fails randomly after ~5 mins of inactivity
+        // so this'll stop that from crashing the server
+        try {
+            const dir = join(
+                process.cwd(),
+                'src',
+                'routes',
+                ...file.split(sep).slice(0, -1)
+            );
+            const types = generate_types(dir);
+            if (
+                !existsSync(join(dir, 'types.d.ts')) ||
+                types !== readFileSync(join(dir, 'types.d.ts'), 'utf-8')
+            ) {
+                writeFileSync(join(dir, 'types.d.ts'), types);
+            }
+            // because typescript always implicitly `<reference>`s ambient type declarations,
+            // we have to create a tsconfig for each route :|
+            if (!existsSync(join(dir, 'tsconfig.json'))) {
+                writeFileSync(
+                    join(dir, 'tsconfig.json'),
+                    JSON.stringify({
+                        compilerOptions: {
+                            target: 'ES2024',
+                            checkJs: true,
+                            allowJs: true,
+                            strict: true,
+                            moduleResolution: 'nodenext',
+                            module: 'nodenext',
+                            resolveJsonModule: true,
+                            noEmit: true
+                        },
+                        include: ['*', '*/*'],
+                        exclude: []
+                    })
                 );
-                const types = generate_types(dir);
-                if (
-                    !existsSync(join(dir, 'index.html')) ||
-                    types !== readFileSync(join(dir, 'index.html'), 'utf-8')
-                ) {
-                    writeFileSync(join(dir, 'index.html'), types);
-                }
-                // because typescript always implicitly `<reference>`s ambient type declarations,
-                // we have to create a tsconfig for each route :|
-                if (!existsSync(`${dir}/tsconfig.json`)) {
-                    writeFileSync(
-                        `${dir}/tsconfig.json`,
-                        JSON.stringify({
-                            compilerOptions: {
-                                target: 'ES2024',
-                                checkJs: true,
-                                allowJs: true,
-                                strict: true,
-                                moduleResolution: 'nodenext',
-                                module: 'nodenext',
-                                resolveJsonModule: true,
-                                noEmit: true
-                            },
-                            include: ['*', '*/*'],
-                            exclude: []
-                        })
-                    );
-                }
-            } catch {}
+            }
+        } catch(err) {
+            console.error(err);
         }
     }
 }
 if (DEV) {
     generate_all_types();
 }
-
 /**
  * Generates type declarations for a certain path.
  * This includes ambient declarations for `useContext` and `useParams`.
@@ -198,7 +199,7 @@ function generate_types(path) {
     /** @type {string[]} */
     const params = [];
     let dir = path;
-    while (dir.length > 0) {
+    while ([...dir].filter(char => char === sep).length > 1) {
         const { base, dir: next } = parse(dir);
         if (base.match(/^\[.+\]$/)) {
             params.push(base.slice(1, -1));
@@ -227,7 +228,7 @@ function generate_types(path) {
         type_declarations += `}${context.load_fns
             .map(
                 load_fn =>
-                    `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
+                    `, Awaited<ReturnType<typeof import('${load_fn.replace(/\\/g, '\\\\')}').default>>`
             )
             .join('')}]>;\n// @ts-ignore\ndeclare module '#server' {\n`;
         type_declarations += `\texport function useContext(): Context;\n`;
@@ -248,7 +249,7 @@ function generate_types(path) {
         type_declarations += `}\ntype Context = __MergeContext<[{}${context.load_fns
             .map(
                 load_fn =>
-                    `, Awaited<ReturnType<typeof import('${load_fn}').default>>`
+                    `, Awaited<ReturnType<typeof import('${load_fn.replace(/\\/g, '\\\\')}').default>>`
             )
             .join('')}]>;\ndeclare global {\n`;
     }
@@ -272,10 +273,10 @@ async function gather_load_functions(path) {
     let dir = path;
     /** @type {Array<(request: __Request<Record<string, string>>) => any>} */
     const load_fns = [];
-    while (dir.length > 1) {
+    while ([...dir].filter(char => char === sep).length > 1) {
         const load_path = join(dir, '+load.js');
         if (existsSync(load_path)) {
-            const { default: load } = await import(load_path);
+            const { default: load } = await import(`file:${sep}${sep}${load_path}`);
             load_fns.push(load);
         }
         ({ dir } = parse(dir));
@@ -291,13 +292,13 @@ function gather_load_function_paths(path) {
     /** @type {string[]} */
     const load_fns = [];
     let relative = '.';
-    while (dir.length > 1) {
+    while ([...dir].filter(char => char === sep).length > 1) {
         const load_path = join(dir, '+load.js');
         if (existsSync(load_path)) {
-            load_fns.push(`${relative}/+load.js`);
+            load_fns.push(`${relative}${sep}+load.js`);
         }
         ({ dir } = parse(dir));
-        relative += relative === '.' ? '.' : '/..';
+        relative += relative === '.' ? '.' : `${sep}..`;
     }
     return load_fns;
 }
@@ -334,7 +335,6 @@ function is_error_object(err) {
 }
 
 app.use(async (req, res, next) => {
-    console.log('running');
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
      */
@@ -369,15 +369,13 @@ app.use(async (req, res, next) => {
     if (req.path === 'events' && DEV) return next();
     const path = join(process.cwd(), 'src', 'routes', ...req.path.split('/'));
     const prefetching = typeof req.query.prefetching === 'string';
-    console.log(path);
     if (existsSync(path)) {
-        console.log('exists');
-        const stats = statSync(path);
-        if (stats.isFile()) {
+        const stats = statSync(path, { throwIfNoEntry: false });
+        if (stats?.isFile()) {
             const type = path.split('.').at(-1);
             res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
-            res.sendFile(path, { root: '.' });
-        } else {
+            res.sendFile(path);
+        } else if (stats) {
             const html_path = join(path, 'index.html');
             const template = readFileSync(join(path, 'index.html'), 'utf-8');
             res.contentType('.html');
@@ -406,15 +404,15 @@ app.use(async (req, res, next) => {
         }
         return;
     } else {
-        const parsed_params = params(join(...path.split('/')));
+        const parsed_params = params(path);
         if (existsSync(parsed_params.path)) {
-            const stats = statSync(parsed_params.path);
-            if (stats.isFile()) {
+            const stats = statSync(parsed_params.path, { throwIfNoEntry: false });
+            if (stats?.isFile()) {
                 const type = parsed_params.path.split('.').at(-1);
                 res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
             } else {
                 const path = parsed_params.path;
-                const html_path = join(...path.split('/'), 'index.html');
+                const html_path = join(path, 'index.html');
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
                 try {
@@ -475,16 +473,16 @@ async function gather_all_contexts(path, error = null) {
     if (parse(path).base === '+error' && error !== null) {
         context.error = error;
     }
-    while (dir.length > 1) {
+    while ([...dir].filter(char => char === sep).length > 1) {
         const contexts = readdirSync(dir).filter(
             path =>
-                statSync(join(dir, path)).isDirectory() &&
+                statSync(join(dir, path), { throwIfNoEntry: false })?.isDirectory() &&
                 path.match(/^\(.+\)$/)
         );
         for (const folder of contexts) {
             const path = join(dir, folder);
             for (const file of readdirSync(path)) {
-                const module = await import(join(path, file));
+                const module = await import(`file:${sep}${sep}${join(path, file)}`);
                 if (module?.default) {
                     (context[folder.slice(1, -1)] ??= {})[file.slice(0, -3)] =
                         module.default;
@@ -508,23 +506,23 @@ function gather_all_context_types(path) {
     }
     const load_fns = gather_load_function_paths(path);
     let relative = '.';
-    while (dir.length > 1) {
+    while ([...dir].filter(char => char === sep).length > 1) {
         const contexts = readdirSync(dir).filter(
             path =>
-                statSync(`${dir}/${path}`).isDirectory() &&
+                statSync(join(dir, path), { throwIfNoEntry: false })?.isDirectory() &&
                 path.match(/^\(.+\)$/)
         );
         for (const folder of contexts) {
-            const path = `${dir}/${folder}`;
+            const path = join(dir, folder);
             for (const file of readdirSync(path)) {
                 const context_key = folder.slice(1, -1);
                 const file_key = file.slice(0, -3);
                 (context[context_key] ??= {})[
                     file_key
-                ] = `typeof import('${relative}/${folder}/${file}').default`;
+                ] = `typeof import('${(`${relative}${sep}${folder}${sep}${file}`).replace(/\\/g, '\\\\')}').default`;
             }
         }
-        relative += relative === '.' ? '.' : '/..';
+        relative += relative === '.' ? '.' : `${sep}..`;
         ({ dir } = parse(dir));
     }
     return { context, load_fns };
