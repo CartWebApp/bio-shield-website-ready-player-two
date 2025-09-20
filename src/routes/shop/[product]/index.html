@@ -24,6 +24,19 @@ Bio-Shield
             transform: translateY(-1em);
             gap: 1em;
             padding: 1em 2em 1em 1em;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 37vh;
+            transform: translateY(-0.2em);
+            &::-webkit-scrollbar {
+                background: #222;
+                border-radius: 0.2em;
+                width: 0.6em;
+            }
+            &::-webkit-scrollbar-thumb {
+                background: #333;
+                border-radius: 0.5em;
+            }
             & .img_wrapper {
                 width: 6em;
                 height: 6em;
