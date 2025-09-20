@@ -3,6 +3,7 @@ export {};
 type Context = __MergeContext<[{
 	products: {
 		['bio-shield-bracelet']: typeof import('.\\(products)\\bio-shield-bracelet.js').default;
+		['bio-shield-bundle']: typeof import('.\\(products)\\bio-shield-bundle.js').default;
 		['bio-shield-salve']: typeof import('.\\(products)\\bio-shield-salve.js').default;
 		['bio-shield-spray']: typeof import('.\\(products)\\bio-shield-spray.js').default;
 	};
