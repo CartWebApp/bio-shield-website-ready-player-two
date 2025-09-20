@@ -126,6 +126,9 @@ nav span a:not(:has(img)) {
                 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
                 'Helvetica Neue', sans-serif;
         }
+        & .sort_by {
+            margin: 2em 0 0 49vw;
+        }
     }
     & .products {
         display: grid;
