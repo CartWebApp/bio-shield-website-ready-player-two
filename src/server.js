@@ -585,8 +585,12 @@ async function transform(
                 'the return value of each `load` function must be an object or nullish value'
             );
         }
-        active_route.context = deserialize(stringify(Object.assign(context, res)));
-        active_route.request.params = structuredClone(active_route.request.params);
+        active_route.context = deserialize(
+            stringify(Object.assign(context, res))
+        );
+        active_route.request.params = structuredClone(
+            active_route.request.params
+        );
     }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
