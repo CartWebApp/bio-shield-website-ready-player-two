@@ -30,6 +30,9 @@ function handler(url) {
  * @param {string} url
  */
 async function navigate(url) {
+    if (url === location.toString()) {
+        return;
+    }
     const entry = /** @type {CacheEntry} */ (cache.get(url));
     history.pushState(url_history.push(url), '', url);
     document.title = entry.title;
