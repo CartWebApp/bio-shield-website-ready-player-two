@@ -1,9 +1,28 @@
+/** @import { Product } from '#types' */
 // @ts-check
 /// <reference path="./types.d.ts" />
 const products = useContext('products');
 const list = /** @type {HTMLDivElement} */ (
     document.querySelector('.products')
 );
+/**
+ * @template {string[]} Keys
+ * @param {Keys} keys
+ * @returns {Readonly<Record<Keys[number], symbol>>}
+ */
+export function Enum(...keys) {
+    return Object.freeze(
+        /** @type {Record<Keys[number], symbol>} */ (
+            Object.fromEntries(
+                keys.map(
+                    key =>
+                        /** @type {[Keys[number], symbol]} */ ([key, Symbol()])
+                )
+            )
+        )
+    );
+}
+const SORT_TYPES = Enum('A - Z', 'Z - A', 'Asc. Price', 'Desc. Price');
 /**
  * @template {keyof HTMLElementTagNameMap} Tag
  * @param {Tag} type
@@ -39,31 +58,82 @@ function element(type, props = null, ...children) {
     );
     return elem;
 }
-for (const [endpoint, product] of Object.entries(products)) {
-    list.append(
-        element(
-            'a',
-            {
-                href: `/shop/${endpoint}`
-            },
+/**
+ * @param {Record<string, Product>} products
+ * @param {(typeof SORT_TYPES)[keyof typeof SORT_TYPES]} type
+ * @returns {Record<string, Product>}
+ */
+function sort(products, type) {
+    const entries = Object.entries(products);
+    switch (type) {
+        case SORT_TYPES['A - Z']: {
+            return Object.fromEntries(entries);
+        }
+        case SORT_TYPES['Z - A']: {
+            return Object.fromEntries(entries.toReversed());
+        }
+        case SORT_TYPES['Asc. Price']: {
+            return Object.fromEntries(
+                entries.sort(
+                    ([, { price: a_price }], [, { price: b_price }]) =>
+                        a_price - b_price
+                )
+            );
+        }
+        case SORT_TYPES['Desc. Price']: {
+            return Object.fromEntries(
+                entries.sort(
+                    ([, { price: a_price }], [, { price: b_price }]) =>
+                        b_price - a_price
+                )
+            );
+        }
+    }
+    return products;
+}
+/**
+ * @param {Record<string, Product>} products
+ */
+function render(products) {
+    list.replaceChildren();
+    for (const [endpoint, product] of Object.entries(products)) {
+        list.append(
             element(
-                'div',
+                'a',
                 {
-                    class: 'product'
+                    href: `/shop/${endpoint}`
                 },
-                element('img', {
-                    src: product.images[0]
-                }),
-                element('br'),
-                product.name,
                 element(
-                    'span',
+                    'div',
                     {
-                        class: 'price'
+                        class: 'product'
                     },
-                    product.price
+                    element('img', {
+                        src: product.images[0]
+                    }),
+                    element('br'),
+                    product.name,
+                    element(
+                        'span',
+                        {
+                            class: 'price'
+                        },
+                        product.price
+                    )
                 )
             )
+        );
+    }
+}
+const sorter = /** @type {HTMLSelectElement} */ (
+    document.querySelector('select')
+);
+sorter.addEventListener('input', () => {
+    render(
+        sort(
+            products,
+            SORT_TYPES[/** @type {keyof typeof SORT_TYPES} */ (sorter.value)]
         )
     );
-}
+});
+render(products);
