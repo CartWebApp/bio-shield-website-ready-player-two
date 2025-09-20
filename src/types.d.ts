@@ -34,5 +34,5 @@ type ___IntersectNonNull<
 
 /** @internal */
 export type __MergeContext<T extends Array<null | {} | void>> = {
-    [K in keyof ___IntersectNonNull<T>]: ___IntersectNonNull<T>[K];
+    readonly [K in keyof ___IntersectNonNull<T>]: ___IntersectNonNull<T>[K];
 };

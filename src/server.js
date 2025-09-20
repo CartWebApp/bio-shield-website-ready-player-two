@@ -20,10 +20,9 @@ import { STATUS_CODES } from 'http';
 import { minify } from 'terser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
-/** @type {Record<string, Record<string, any>> | null} */
-export let active_context = null;
-/** @type {Record<string, string> | null} */
-export let active_params = null;
+/** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> }} Route */
+/** @type {Route | null} */
+export let active_route = null;
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -187,7 +186,7 @@ function generate_types(path) {
         if (params.length > 0) {
             type_declarations += `export interface Params {\n`;
             for (const param of params) {
-                type_declarations += `\t${
+                type_declarations += `\treadonly ${
                     regex_is_valid_identifier.test(param)
                         ? param
                         : `['${param.replace(/\'/g, "\\'")}']`
@@ -244,6 +243,7 @@ function generate_types(path) {
             type_declarations += `\t// @ts-ignore\n\texport function useParams<K extends keyof Params>(param: K): Params[K];\n`;
         }
         type_declarations += `\t// @ts-ignore\n\texport function useParams(): Params;\n`;
+        type_declarations += `\t// @ts-ignore\n\texport function getRequest(): Request;\n`;
         type_declarations += '}\ndeclare global {\n';
         type_declarations += `\texport function useContext<K extends keyof Context>(key: K): Context[K];\n`;
     } else {
@@ -253,6 +253,7 @@ function generate_types(path) {
             type_declarations += `\t// @ts-ignore\n\texport function useParams<K extends keyof Params>(param: K): Params[K];\n`;
         }
         type_declarations += `\t// @ts-ignore\n\texport function useParams(): Params;\n`;
+        type_declarations += `\t// @ts-ignore\n\texport function getRequest(): Request;\n`;
         type_declarations += `}\nexport type Context = __MergeContext<[{}${context.load_fns
             .map(
                 load_fn =>
@@ -569,8 +570,13 @@ async function transform(
     const dir = parse(url).dir;
     const context = await gather_all_contexts(dir, error);
     // we clone the context to (1) assert that its valid and (2) avoid mutation during `load` functions
-    active_context = deserialize(stringify(context));
-    active_params = structuredClone(params.params);
+    const active_context = deserialize(stringify(context));
+    let active_params = structuredClone(params.params);
+    active_route = {
+        context: active_context,
+        request
+    };
+    active_route.request.params = active_params;
     const load_fns = await gather_load_functions(dir);
     for (const load of load_fns) {
         const res = (await load(request)) ?? {};
@@ -579,8 +585,8 @@ async function transform(
                 'the return value of each `load` function must be an object or nullish value'
             );
         }
-        active_context = deserialize(stringify(Object.assign(context, res)));
-        active_params = structuredClone(params.params);
+        active_route.context = deserialize(stringify(Object.assign(context, res)));
+        active_route.request.params = structuredClone(active_route.request.params);
     }
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
@@ -616,7 +622,7 @@ async function transform(
               'utf-8'
           )
         : '';
-    active_context = active_params = null;
+    active_route = null;
     return `<!DOCTYPE html>
 <html lang="en">
     <head>

@@ -16,6 +16,8 @@ declare module '#server' {
 	export function useParams<K extends keyof Params>(param: K): Params[K];
 	// @ts-ignore
 	export function useParams(): Params;
+	// @ts-ignore
+	export function getRequest(): Request;
 }
 declare global {
 	export function useContext<K extends keyof Context>(key: K): Context[K];
@@ -24,7 +26,7 @@ declare global {
 	export function useParams(): Params;
 }
 export interface Params {
-	product: string;
+	readonly product: string;
 }
 export type Request = __Request<Params>;
 export type LoadFunction<T extends {} | null | void> = __LoadFunction<Request, T>;

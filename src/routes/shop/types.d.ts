@@ -14,6 +14,8 @@ declare module '#server' {
 	export function useContext<K extends keyof Context>(key: K): Context[K];
 	// @ts-ignore
 	export function useParams(): Params;
+	// @ts-ignore
+	export function getRequest(): Request;
 }
 declare global {
 	export function useContext<K extends keyof Context>(key: K): Context[K];

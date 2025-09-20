@@ -1,4 +1,5 @@
 /** @import { Product } from '#types' */
+/** @import { Context } from './types.js' */
 // @ts-check
 /// <reference path="./types.d.ts" />
 const products = useContext('products');
@@ -58,8 +59,9 @@ function element(type, props = null, ...children) {
     );
     return elem;
 }
+
 /**
- * @param {Record<string, Product>} products
+ * @param {Context['products']} products
  * @param {(typeof SORT_TYPES)[keyof typeof SORT_TYPES]} type
  * @returns {Record<string, Product>}
  */
@@ -91,8 +93,9 @@ function sort(products, type) {
     }
     return products;
 }
+
 /**
- * @param {Record<string, Product>} products
+ * @param {Readonly<Record<string, Readonly<Product>>>} products
  */
 function render(products) {
     list.replaceChildren();

@@ -5,6 +5,8 @@ declare module '#server' {
 	export function useContext(): Context;
 	// @ts-ignore
 	export function useParams(): Params;
+	// @ts-ignore
+	export function getRequest(): Request;
 }
 export type Context = __MergeContext<[{}]>;
 declare global {
