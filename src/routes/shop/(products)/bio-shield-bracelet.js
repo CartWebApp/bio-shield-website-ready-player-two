@@ -1,8 +1,8 @@
 /** @import { Product } from '#types' */
 
 export default /** @type {Product} */ ({
-    name: 'Bio-Shield Spray',
-    images: ['/static/spray.png'],
+    name: 'Bio-Shield Bracelet',
+    images: ['/static/bracelet.png'],
     description: '',
-    price: 8.99
+    price: 4.99
 });

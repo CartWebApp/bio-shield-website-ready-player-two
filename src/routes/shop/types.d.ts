@@ -2,6 +2,8 @@ import type { __Request, __LoadFunction, __MergeContext } from '#__types';
 export {};
 type Context = __MergeContext<[{
 	products: {
+		['bio-shield-bracelet']: typeof import('.\\(products)\\bio-shield-bracelet.js').default;
+		['bio-shield-salve']: typeof import('.\\(products)\\bio-shield-salve.js').default;
 		['bio-shield-spray']: typeof import('.\\(products)\\bio-shield-spray.js').default;
 	};
 }]>;
