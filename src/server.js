@@ -671,7 +671,7 @@ async function transform(
     <body>
         ${base.split(/\n{4}/)[0]}
         ${body}
-        ${base.split(/\n{4}/)[1]}
+        ${base.split(/\n{4}/)[1] ?? ''}
     </body>
 </html>`;
 }
