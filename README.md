@@ -92,13 +92,13 @@ To appease TypeScript, we generate ambient `d.ts` files on the fly for each rout
 Like SvelteKit, you can use `load` functions. `load` functions are default exports from `+load.js` files. These are async or sync functions that take a `request` parameter and can return a value. This value can either be `null`, `undefined`, or an object which will be added to the context. If you need to throw an HTTP error, you can call the `error` function available in the `#server` module. This is also where `useContext` and `useParams` can be called from the server. Additionally, if you find yourself prop drilling and passing `request` down multiple functions, use `getRequest` from `#server`, which provides a cleaner solution.
 
 ```js
-// src/routes/shop/[product]/+load.js
+// `src/routes/shop/[product]/+load.js`
 /** @import { Product } from '#types' */
 /** @import { LoadFunction } from './types.js' */
 /// <reference path="./types.d.ts" />
 import { error, useContext, useParams } from '#server';
 
-/** @type {LoadFunction<{ item: Product }>} */
+/** @type {LoadFunction<{ product: Product }>} */
 export default function load(request) {
     const { products } = useContext();
     const { product } = useParams();
@@ -106,7 +106,7 @@ export default function load(request) {
         error(404);
     }
     return {
-        item: products[/** @type {keyof typeof products} */ (product)]
+        product: products[/** @type {keyof typeof products} */ (product)]
     };
 }
 ```
