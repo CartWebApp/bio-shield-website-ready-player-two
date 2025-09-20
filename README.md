@@ -73,7 +73,7 @@ In the case that an HTTP error is thrown (most likely 404 not found), you can ad
 
 ### Scripts
 
-If you have a `+client.js` file in the same folder as a route, it will be inlined with your `index.html` without the need to `<script src` it. Additionally, the root `+client.js` will be inlined into every route.
+If you have a `+client.js` file in the same folder as a route, it will be inlined with your `index.html` without the need to `<script src` it. Additionally, a `+base.js` file at the root route will be inlined with every route.
 
 ## Types
 

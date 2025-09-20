@@ -585,23 +585,20 @@ async function transform(
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = lines.join('\n');
     let main_script = existsSync(
-        join(process.cwd(), 'src', 'routes', '+client.js')
+        join(process.cwd(), 'src', 'routes', '+base.js')
     )
         ? (
               await minify(
                   readFileSync(
-                      join(process.cwd(), 'src', 'routes', '+client.js'),
+                      join(process.cwd(), 'src', 'routes', '+base.js'),
                       'utf-8'
                   )
               )
           ).code
         : '';
-    let script =
-        existsSync(join(dir, '+client.js')) &&
-        dir !== join(process.cwd(), 'src', 'routes')
-            ? (await minify(readFileSync(join(dir, '+client.js'), 'utf-8')))
-                  .code
-            : '';
+    let script = existsSync(join(dir, '+client.js'))
+        ? (await minify(readFileSync(join(dir, '+client.js'), 'utf-8'))).code
+        : '';
     active_context = active_params = null;
     return `<!DOCTYPE html>
 <html lang="en">
@@ -614,8 +611,18 @@ async function transform(
         <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
         <link rel="manifest" href="/static/icons/site.webmanifest">
         <link rel="stylesheet" href="/styles.css" />
-        ${prefetching ? '' : `<script type="module">${main_script}</script>`}
-        <script type="module">${script}</script>${
+        ${
+            prefetching ||
+            typeof main_script !== 'string' ||
+            main_script.length === 0
+                ? ''
+                : `<script type="module">${main_script}</script>`
+        }
+        ${
+            typeof script === 'string' && script.length > 0
+                ? `<script type="module">${script}</script>`
+                : ''
+        }${
         DEV
             ? `
         <script>
