@@ -225,3 +225,8 @@ nav span a:not(:has(img)) {
         margin-top: 1em;
     }
 }
+
+.split {
+    display: flex;
+    justify-content: space-between;
+}

@@ -1,4 +1,68 @@
 Bio-Shield
-<script>
-    console.log(useParams());
-</script>
+<br />
+<br />
+<br />
+<div class="island">
+    <h1></h1>
+    <br />
+    <div class="split">
+        <div class="images">
+            <aside class="carousel"></aside>
+        </div>
+        <div class="info">
+            <h2 class="price"></h2>
+        </div>
+    </div>
+</div>
+<style>
+    .images {
+        display: flex;
+        min-width: 25vw;
+        & > .carousel {
+            display: grid;
+            grid-template-rows: 1;
+            transform: translateY(-1em);
+            gap: 1em;
+            padding: 1em 2em 1em 1em;
+            & .img_wrapper {
+                width: 6em;
+                height: 6em;
+                margin: auto;
+                border: 0.05em solid white;
+                transition: background 0.3s ease;
+                border-radius: 0.2rem;
+                cursor: pointer;
+                &:hover {
+                    background: #222;
+                }
+            }
+            & img {
+                height: 5em;
+                margin: auto;
+                padding: 0.5em;
+            }
+        }
+        & > img {
+            object-fit: contain;
+            height: 40vh;
+            margin: auto;
+            margin-bottom: 2em;
+        }
+    }
+    .info {
+        text-align: left;
+        min-width: 30vw;
+        transform: translateY(-4em);
+    }
+    .island {
+        min-width: 65vw;
+        padding: 2em 4em 4em 4em;
+        & h2 {
+            font-family: 'DM Serif Display';
+            font-size: 4em;
+            &::before {
+                content: '$';
+            }
+        }
+    }
+</style>

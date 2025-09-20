@@ -4,3 +4,4 @@ const h1 = /** @type {HTMLHeadingElement} */ (document.querySelector('h1'));
 const h5 = /** @type {HTMLHeadingElement} */ (document.querySelector('h5'));
 h1.textContent = error.status.toString();
 h5.textContent = error.message;
+document.title = `${error.status} - Bio-Shield`;
