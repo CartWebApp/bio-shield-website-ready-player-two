@@ -395,16 +395,16 @@ app.use(async (req, res, next) => {
             res.sendFile(path);
         } else if (stats) {
             const html_path = join(path, 'index.html');
-            const template = readFileSync(join(path, 'index.html'), 'utf-8');
+            const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
             try {
                 res.send(
                     await transform(
                         template,
-                        join(path, 'index.html'),
+                        html_path,
                         create_request_object(req, res, {}),
                         {
-                            path: join(path, 'index.html'),
+                            path: html_path,
                             params: {}
                         },
                         null,
@@ -690,6 +690,25 @@ export function escape(data) {
     );
 }
 
+const base = existsSync(join(process.cwd(), 'src', 'routes', '+base.html'))
+    ? readFileSync(join(process.cwd(), 'src', 'routes', '+base.html'), 'utf-8')
+    : '';
+const css = existsSync(join(process.cwd(), 'src', 'routes', '+base.css'))
+    ? readFileSync(join(process.cwd(), 'src', 'routes', '+base.css'), 'utf-8')
+    : '';
+
+const main_script = existsSync(join(process.cwd(), 'src', 'routes', '+base.js'))
+    ? (
+          await minify(
+              readFileSync(
+                  join(process.cwd(), 'src', 'routes', '+base.js'),
+                  'utf-8'
+              ),
+              { module: true }
+          )
+      ).code
+    : '';
+
 /**
  * Transforms the template to include `<head>` content and context/params injection.
  * @param {string} template
@@ -756,19 +775,6 @@ async function transform(
     const [title, ...lines] = template.split(/\r?\n/g);
     const body = await build_body(lines.join('\n\t\t'), route.body);
     active_route = null;
-    const main_script = existsSync(
-        join(process.cwd(), 'src', 'routes', '+base.js')
-    )
-        ? (
-              await minify(
-                  readFileSync(
-                      join(process.cwd(), 'src', 'routes', '+base.js'),
-                      'utf-8'
-                  ),
-                  { module: true }
-              )
-          ).code
-        : '';
     const script = existsSync(join(dir, '+client.js'))
         ? (
               await minify(readFileSync(join(dir, '+client.js'), 'utf-8'), {
@@ -785,18 +791,6 @@ async function transform(
               )
             : '') +
         route.head.append.join('');
-    const base = existsSync(join(process.cwd(), 'src', 'routes', '+base.html'))
-        ? readFileSync(
-              join(process.cwd(), 'src', 'routes', '+base.html'),
-              'utf-8'
-          )
-        : '';
-    const css = existsSync(join(process.cwd(), 'src', 'routes', '+base.css'))
-        ? readFileSync(
-              join(process.cwd(), 'src', 'routes', '+base.css'),
-              'utf-8'
-          )
-        : '';
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
