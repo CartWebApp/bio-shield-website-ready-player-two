@@ -123,9 +123,7 @@ nav span a:not(:has(img)) {
 
 .island {
     padding: 1em 0.8em 2em 1.8em;
-    /* background-color: #111; */
     text-align: left;
-    /* animation: pulsate 2s infinite; */
     max-width: 50vw;
     margin: 0 auto;
     clip-path: inset(-25vw, 0, -25vw, 0);
@@ -212,37 +210,6 @@ nav span a:not(:has(img)) {
     }
 }
 
-@keyframes pulsate {
-    0%,
-    100% {
-        box-shadow: var(--base-dark) 0em 0em 6em 0em;
-    }
-    10% {
-        box-shadow: var(--base-dark) 0em 0em 5.5em 0em;
-    }
-    20% {
-        box-shadow: var(--base-dark) 0em 0em 5em 0em;
-    }
-    30% {
-        box-shadow: var(--base-dark) 0em 0em 4.5em 0em;
-    }
-    40% {
-        box-shadow: var(--base-dark) 0em 0em 4em 0em;
-    }
-    50% {
-        box-shadow: var(--base-dark) 0em 0em 4.5em 0em;
-    }
-    60% {
-        box-shadow: var(--base-dark) 0em 0em 5em 0em;
-    }
-    80% {
-        box-shadow: var(--base-dark) 0em 0em 5.5em 0em;
-    }
-    90% {
-        box-shadow: var(--base-dark) 0em 0em 6em 0em;
-    }
-}
-
 .mission h2 {
     font-size: 2em;
     margin-bottom: 1em;
@@ -261,7 +228,7 @@ nav span a:not(:has(img)) {
     line-height: 1.5em;
     font-size: 1.3em;
     text-align: left;
-    min-width: 75vw;
+    min-width: 85vw;
     & p {
         margin-top: 1em;
     }
@@ -270,4 +237,8 @@ nav span a:not(:has(img)) {
 .split {
     display: flex;
     justify-content: space-between;
+}
+
+.green {
+    color: var(--base-dark);
 }
