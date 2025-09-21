@@ -159,7 +159,7 @@ async function init() {
     );
     Promise.allSettled(promises);
     const body = document.body;
-    preload('/static/bg.4k.jpg').then(url => {
+    preload('/static/bg.4k.webp').then(url => {
         console.log('loaded 4k image');
         body.style.backgroundImage = `url('${url}')`;
     });

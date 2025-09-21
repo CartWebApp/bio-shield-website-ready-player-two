@@ -1,5 +1,6 @@
 @font-face {
     font-family: 'DM Serif Display';
+    font-display: swap;
     src: url('/static/fonts/DMSerifDisplay-Regular.ttf');
 }
 
@@ -14,7 +15,7 @@
 body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
-    background: url('./static/bg.2k.png') no-repeat center/cover;
+    background: url('./static/bg.2k.webp') no-repeat center/cover;
     background-position-y: 2em;
     color: white;
     align-items: center;
@@ -156,9 +157,6 @@ nav span a:not(:has(img)) {
             border: 0.05em solid #222;
             box-shadow: 0px 0px 2px 0px #999;
             transition: box-shadow 0.3s ease;
-            &:hover {
-                box-shadow: 0px 0px 4px 0px #999;
-            }
             background: #151515;
             padding: 1em;
             margin: 1em;
@@ -167,6 +165,9 @@ nav span a:not(:has(img)) {
             display: flex;
             flex-direction: column;
             align-items: center;
+            &:hover {
+                box-shadow: 0px 0px 4px 0px #999;
+            }
             & .price::before {
                 content: '$';
             }

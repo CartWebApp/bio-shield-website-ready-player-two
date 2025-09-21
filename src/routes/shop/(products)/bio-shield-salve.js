@@ -2,7 +2,7 @@
 
 export default /** @type {Product} */ ({
     name: 'Bio-Shield Salve',
-    images: ['/static/salve.png'],
+    images: ['/static/salve.webp'],
     description: '',
     price: 6.99
 });

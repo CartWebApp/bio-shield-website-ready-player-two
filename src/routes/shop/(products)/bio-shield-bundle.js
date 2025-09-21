@@ -3,11 +3,11 @@
 export default /** @type {Product} */ ({
     name: 'Bio-Shield Bundle',
     images: [
-        '/static/bundle-deal.png',
-        '/static/bracelet.png',
-        '/static/salve.png',
-        '/static/spray.png',
-        '/static/spray-advert.png',
+        '/static/bundle-deal.webp',
+        '/static/bracelet.webp',
+        '/static/salve.webp',
+        '/static/spray.webp',
+        '/static/spray-advert.webp',
         '/static/example-spray-upscaled.png'
     ],
     description: '',
