@@ -36,6 +36,15 @@ export default function load(request) {
             )
             .replace('[[carousel]]', carousel);
     });
+    insert.head.append(
+        element('link', {
+            rel: 'preload',
+            fetchpriority: 'high',
+            as: 'image',
+            href: images[0],
+            type: `image/${images[0].split('.').at(-1)}`
+        })
+    );
     return {
         product
     };
