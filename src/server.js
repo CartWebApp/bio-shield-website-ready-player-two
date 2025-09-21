@@ -754,7 +754,7 @@ async function transform(
         );
     }
     const [title, ...lines] = template.split(/\r?\n/g);
-    const body = await build_body(lines.join('\n'), route.body);
+    const body = await build_body(lines.join('\n\t\t'), route.body);
     active_route = null;
     const main_script = existsSync(
         join(process.cwd(), 'src', 'routes', '+base.js')
