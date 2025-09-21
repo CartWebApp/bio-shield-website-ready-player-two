@@ -92,11 +92,14 @@ nav span a:not(:has(img)) {
 
 .hero {
     text-align: center;
-    padding: 6em 2em;
-    text-shadow: #222 0em 0em 0.6em;
+    padding: 2em 2em 2em 2em;
+    text-shadow: #222 0em 0em 1em;
+    backdrop-filter: blur(20px);
     font-family: 'DM Serif Display', 'Inter', serif;
-    margin: 20vh 0em 20vh 0em;
+    margin: 20vh 30vw 20vh 30vw;
     animation: intro 1s ease-out;
+    border-radius: 2em;
+    border: 
 }
 
 @keyframes intro {
