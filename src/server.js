@@ -20,7 +20,7 @@ import { STATUS_CODES } from 'http';
 import { minify } from 'terser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
-/** @typedef {{ body: string; title: string; head: string }} Body */
+/** @typedef {{ body: InsertionManager<'body'>; title: string; head: InsertionManager<'head'> }} Body */
 /** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> } & Body} Route */
 /** @type {Route | null} */
 export let active_route = null;
@@ -556,6 +556,140 @@ function gather_all_context_types(path) {
 }
 
 /**
+ * @param {string} error_message
+ */
+export function get_active_route(error_message) {
+    const route = active_route;
+    if (route === null) {
+        throw new Error(error_message);
+    }
+    return route;
+}
+
+/**
+ * @template T
+ * @typedef {T | Promise<T>} Promisable
+ */
+
+/**
+ * @template {'body' | 'head'} Type
+ */
+class InsertionManager {
+    /** @type {Type extends 'body' ? InsertionBody : InsertionHead} */
+    body;
+    /** @type {string[]} */
+    append = [];
+    /** @type {string[]} */
+    prepend = [];
+    /** @type {Array<{ matcher: RegExp | string; replacement: string } | ((data: string) => Promisable<string>)>} */
+    replacers = [];
+
+    /**
+     * @param {Type} key
+     */
+    constructor(key) {
+        // not sure why i have to do so much type finagling here
+        this.body =
+            /** @type {Type extends 'body' ? InsertionBody : InsertionHead} */ (
+                key === 'body'
+                    ? new InsertionBody(
+                          /** @type {InsertionManager<'body'>} */ (this)
+                      )
+                    : new InsertionHead(
+                          /** @type {InsertionManager<'head'>} */ (this)
+                      )
+            );
+    }
+}
+
+class InsertionBody {
+    #manager;
+    /**
+     * Appends HTML *after* the body of the route, but before the last `+base.html` section.
+     * @param {string} html
+     */
+    append(html) {
+        get_active_route(
+            `\`insert.body.append\` can only be called in a \`load\` function`
+        );
+        this.#manager.append.push(html);
+    }
+    /**
+     * Prepends HTML *before* the body of the route, but after the first `+base.html` section.
+     * @param {string} html
+     */
+    prepend(html) {
+        get_active_route(
+            `\`insert.body.prepend\` can only be called in a \`load\` function`
+        );
+        this.#manager.prepend.unshift(html);
+    }
+    /**
+     * @param {RegExp | string | ((data: string) => Promisable<string>)} replacer
+     * @param {string} [replacement]
+     */
+    replace(replacer, replacement) {
+        get_active_route(
+            `\`insert.body.replace\` can only be called in a \`load\` function`
+        );
+        if (typeof replacer === 'function') {
+            this.#manager.replacers.push(replacer);
+        } else if (typeof replacement === 'string') {
+            this.#manager.replacers.push({
+                matcher: replacer,
+                replacement
+            });
+        }
+    }
+    /**
+     * @param {InsertionManager<'body'>} manager
+     */
+    constructor(manager) {
+        this.#manager = manager;
+    }
+}
+
+class InsertionHead {
+    #manager;
+    /**
+     * Appends HTML after the `+head.html` content.
+     * @param {string} html
+     */
+    append(html) {
+        get_active_route(
+            `\`insert.head.append\` can only be called in a \`load\` function`
+        );
+        this.#manager.append.push(html);
+    }
+    /**
+     * Prepends HTML before the `+head.html` content.
+     * @param {string} html
+     */
+    prepend(html) {
+        get_active_route(
+            `\`insert.head.prepend\` can only be called in a \`load\` function`
+        );
+        this.#manager.prepend.unshift(html);
+    }
+    /**
+     * @param {InsertionManager<'head'>} manager
+     */
+    constructor(manager) {
+        this.#manager = manager;
+    }
+}
+
+/**
+ * Escapes the `string` passed to it to prevent XSS.
+ * @param {string} data
+ */
+export function escape(data) {
+    return data.replace(/["<&]/g, m =>
+        m === '"' ? '&quot;' : m === '<' ? '&lt;' : '&amp;'
+    );
+}
+
+/**
  * Transforms the template to include `<head>` content and context/params injection.
  * @param {string} template
  * @param {string} url
@@ -572,17 +706,34 @@ async function transform(
     error = null,
     prefetching = false
 ) {
+    /**
+     * @param {string} body
+     * @param {InsertionManager<'body'>} manager
+     */
+    async function build_body(body, manager) {
+        let res = body;
+        for (const replacer of manager.replacers) {
+            if (typeof replacer === 'function') {
+                res = await replacer(res);
+            } else {
+                res = res.replace(replacer.matcher, replacer.replacement);
+            }
+        }
+        return manager.prepend.join('') + res + manager.append.join('');
+    }
     const dir = parse(url).dir;
     const context = await gather_all_contexts(dir, error);
     // we clone the context to (1) assert that its valid and (2) avoid mutation during `load` functions
-    const active_context = deserialize(stringify(context));
+    const active_context = /** @type {Record<string, Record<string, any>>} */ (
+        deserialize(stringify(context))
+    );
     let active_params = structuredClone(params.params);
     const route = (active_route = {
         context: active_context,
         request,
         title: '',
-        head: '',
-        body: ''
+        head: new InsertionManager('head'),
+        body: new InsertionManager('body')
     });
     active_route.request.params = active_params;
     const load_fns = await gather_load_functions(dir);
@@ -593,15 +744,17 @@ async function transform(
                 'the return value of each `load` function must be an object or nullish value'
             );
         }
-        active_route.context = deserialize(
-            stringify(Object.assign(context, res))
-        );
+        active_route.context =
+            /** @type {Record<string, Record<string, any>>} */ (
+                deserialize(stringify(Object.assign(context, res)))
+            );
         active_route.request.params = structuredClone(
             active_route.request.params
         );
     }
     const [title, ...lines] = template.split(/\r?\n/g);
-    const body = lines.join('\n');
+    const body = await build_body(lines.join('\n'), route.body);
+    active_route = null;
     const main_script = existsSync(
         join(process.cwd(), 'src', 'routes', '+base.js')
     )
@@ -622,25 +775,26 @@ async function transform(
               })
           ).code
         : '';
-    const head = existsSync(join(process.cwd(), 'src', 'routes', '+head.html'))
-        ? readFileSync(
-              join(process.cwd(), 'src', 'routes', '+head.html'),
-              'utf-8'
-          )
-        : '';
+    const head =
+        route.head.prepend.join('') +
+        (existsSync(join(process.cwd(), 'src', 'routes', '+head.html'))
+            ? readFileSync(
+                  join(process.cwd(), 'src', 'routes', '+head.html'),
+                  'utf-8'
+              )
+            : '') +
+        route.head.append.join('');
     const base = existsSync(join(process.cwd(), 'src', 'routes', '+base.html'))
         ? readFileSync(
               join(process.cwd(), 'src', 'routes', '+base.html'),
               'utf-8'
           )
         : '';
-    active_route = null;
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
         ${head}
-        ${route.head}
-        <title>${route.title !== '' ? route.title : title}</title>
+        <title>${route.title !== '' ? route.title : escape(title)}</title>
         ${
             prefetching ||
             typeof main_script !== 'string' ||
@@ -683,7 +837,6 @@ async function transform(
     </head>
     <body>
         ${base.split(/\n{4}/)[0]}
-        ${route.body}
         ${body}
         ${base.split(/\n{4}/)[1] ?? ''}
     </body>

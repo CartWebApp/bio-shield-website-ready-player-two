@@ -1,6 +1,6 @@
 /** @import { __Request } from '#__types'  */
 import { STATUS_CODES } from 'http';
-import { active_route } from './server.js';
+import { get_active_route } from './server.js';
 /** @typedef {__Request<Record<string, string>>} Request */
 
 /**
@@ -14,17 +14,6 @@ export function error(status, message = STATUS_CODES[status]) {
         status,
         message
     };
-}
-
-/**
- * @param {string} error_message
- */
-function get_active_route(error_message) {
-    const route = active_route;
-    if (route === null) {
-        throw new Error(error_message);
-    }
-    return route;
 }
 
 /**
@@ -59,40 +48,41 @@ export function getRequest() {
     return route.request;
 }
 
+import { escape } from './server.js';
+export { escape };
+
 /**
  * `insert` provides some SSR functions that allow you to insert
  * HTML into a route's page in a `load` function.
  */
 export const insert = {
     /**
-     * Inserts HTML into the `<head>`.
-     * @param {string} head
+     * `insert.head` provides utilities to append and prepend HTML to
+     * the `<head>` of your route.
      */
-    head(head) {
-        const route = get_active_route(
-            '`insert.head` can only be called in a `load` function'
-        );
-        route.head += head;
+    get head() {
+        return get_active_route(
+            `\`insert.head\` can only be accessed in a \`load\` function`
+        ).head.body;
     },
     /**
-     * Inserts HTML into the `<body>`, after the first `+base.html` section.
-     * @param {string} body
+     * `insert.body` provides utilities to append, prepend,
+     * and replace HTML in the `<body>` of your route.
      */
-    body(body) {
-        const route = get_active_route(
-            '`insert.body` can only be called in a `load` function'
-        );
-        route.body += body;
+    get body() {
+        return get_active_route(
+            `\`insert.body\` can only be accessed in a \`load\` function`
+        ).body.body;
     },
     /**
-     * Sets the `<title>`.
-     * This takes precedence over the hardcoded title.
+     * Sets the `<title>`. This takes precendence over the hardcoded title.
+     * `title` is escaped to avoid XSS.
      * @param {string} title
      */
     title(title) {
         const route = get_active_route(
-            '`insert.title` can only be called in a `load` function'
+            `\`insert.head\` can only be accessed in a \`load\` function`
         );
-        route.title = title;
+        route.title = escape(title);
     }
 };

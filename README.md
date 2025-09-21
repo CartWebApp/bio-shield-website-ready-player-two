@@ -115,4 +115,4 @@ export default function load(request) {
 
 ### SSR
 
-While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function.
+While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function, or use a templating syntax to render dynamic content on the server.
