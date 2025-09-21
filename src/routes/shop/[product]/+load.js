@@ -1,7 +1,7 @@
 /// <reference path="./types.d.ts" />
 /** @import { Product } from '#types' */
 /** @import { Context, LoadFunction } from './types.js' */
-import { error, escape, insert, useContext } from '#server';
+import { element, error, escape, insert, useContext } from '#server';
 
 /** @type {LoadFunction<{ product: Product }>} */
 export default function load(request) {
@@ -11,21 +11,26 @@ export default function load(request) {
         error(404);
     }
     const product = products[/** @type {keyof Context['products']} */ (key)];
-    insert.title(`${product.name} - Bio-Shield Shop`);
+    const { name, images, price } = product;
+    insert.title(`${name} - Bio-Shield Shop`);
     insert.body.replace(body => {
-        body = body.replace('[[name]]', escape(product.name));
-        body = body.replace('[[price]]', product.price.toString());
-        body = body.replace(
-            '[[image]]',
-            `<div><img src="${product.images[0]}" /></div>`
-        );
-        const carousel = product.images
-            .map(
-                image => `<div class="img_wrapper"><img src="${image}" /></div>`
+        const carousel = images
+            .map(image =>
+                element(
+                    'div',
+                    { class: 'img_wrapper' },
+                    element('img', { src: image, alt: name })
+                )
             )
             .join('\n');
-        body = body.replace('[[carousel]]', carousel);
-        return body;
+        return body
+            .replace('[[name]]', escape(name))
+            .replace('[[price]]', price.toString())
+            .replace(
+                '[[image]]',
+                element('div', null, element('img', { src: images[0] }))
+            )
+            .replace('[[carousel]]', carousel);
     });
     return {
         product

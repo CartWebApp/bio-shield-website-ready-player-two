@@ -7,7 +7,7 @@ export type Context = __MergeContext<[{
 		['bio-shield-salve']: typeof import('.\\(products)\\bio-shield-salve.js').default;
 		['bio-shield-spray']: typeof import('.\\(products)\\bio-shield-spray.js').default;
 	};
-}]>;
+}, Awaited<ReturnType<typeof import('.\\+load.js').default>>]>;
 // @ts-ignore
 declare module '#server' {
 	export function useContext(): Context;

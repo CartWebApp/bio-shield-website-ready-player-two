@@ -139,4 +139,3 @@ sorter.addEventListener('input', () => {
         )
     );
 });
-render(products);
