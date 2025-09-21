@@ -625,6 +625,7 @@ class InsertionBody {
         this.#manager.prepend.unshift(html);
     }
     /**
+     * Replaces HTML in the `<body>`. If a function is passed, the function will *not* be called immediately.
      * @param {RegExp | string | ((data: string) => Promisable<string>)} replacer
      * @param {string} [replacement]
      */

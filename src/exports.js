@@ -52,8 +52,8 @@ import { escape } from './server.js';
 export { escape };
 
 /**
- * `insert` provides some SSR functions that allow you to insert
- * HTML into a route's page in a `load` function.
+ * `insert` provides some SSR primitives that allow you to modify
+ * HTML in a route's page via `load` functions.
  */
 export const insert = {
     /**
@@ -76,7 +76,7 @@ export const insert = {
     },
     /**
      * Sets the `<title>`. This takes precendence over the hardcoded title.
-     * `title` is escaped to avoid XSS.
+     * The title is escaped to avoid XSS.
      * @param {string} title
      */
     title(title) {
