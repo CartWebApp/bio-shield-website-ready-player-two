@@ -9,6 +9,6 @@
         "resolveJsonModule": true,
         "noEmit": true
     },
-    "include": ["*", "*/*"],
+    "include": ["*", "*/*", "src/server/types.d.ts", "src/server/exports.js", "src/server/index.js"],
     "exclude": []
 }

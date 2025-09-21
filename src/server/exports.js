@@ -1,6 +1,6 @@
-/** @import { __Request } from '#__types'  */
+/** @import { __Request } from './types.js'  */
 import { STATUS_CODES } from 'http';
-import { get_active_route } from './server.js';
+import { get_active_route } from './index.js';
 /** @typedef {__Request<Record<string, string>>} Request */
 
 /**
@@ -48,7 +48,7 @@ export function getRequest() {
     return route.request;
 }
 
-import { escape } from './server.js';
+import { escape } from './index.js';
 export { escape };
 
 // https://github.com/sveltejs/svelte/blob/ded13b825d7efcdf064fd65a5aa9e7e61293a48b/packages/svelte/src/utils.js#L16

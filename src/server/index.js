@@ -18,12 +18,15 @@ import { parse, sep, join } from 'path';
 import kleur from 'kleur';
 import { STATUS_CODES } from 'http';
 import { minify } from 'terser';
+import body_parser from 'body-parser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
 /** @typedef {{ body: InsertionManager<'body'>; title: string; head: InsertionManager<'head'> }} Body */
 /** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> } & Body} Route */
 /** @type {Route | null} */
 export let active_route = null;
+/** @type {Map<string, (req: Request, res: Response) => Promise<void>>} */
+export const remote_endpoints = new Map;
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -351,8 +354,12 @@ function is_error_object(err) {
         return false;
     return true;
 }
-
+app.use(body_parser.text());
 app.use(async (req, res, next) => {
+    const remote = remote_endpoints.get(req.path);
+    if (typeof remote === 'function') {
+        return remote(req, res);
+    }
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
      */
