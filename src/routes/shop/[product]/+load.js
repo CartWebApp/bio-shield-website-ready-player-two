@@ -28,7 +28,11 @@ export default function load(request) {
             .replace('[[price]]', price.toString())
             .replace(
                 '[[image]]',
-                element('div', null, element('img', { src: images[0] }))
+                element(
+                    'div',
+                    null,
+                    element('img', { src: images[0], alt: name })
+                )
             )
             .replace('[[carousel]]', carousel);
     });
