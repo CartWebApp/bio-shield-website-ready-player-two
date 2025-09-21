@@ -1,5 +1,4 @@
 // @ts-check
-
 // @ts-expect-error this isn't pretty, but it's better than having a leaky array of `<a>` elements
 HTMLElement.prototype.__prefetched = false;
 /** @typedef {{ body: DocumentFragment; title: string; scripts: HTMLScriptElement[] }} CacheEntry */
@@ -159,6 +158,11 @@ async function init() {
     );
     Promise.allSettled(promises);
     const body = document.body;
+    // @ts-expect-error this isn't in safari yet
+    if (typeof scheduler === 'object' && scheduler !== null) {
+        // @ts-expect-error
+        await scheduler.yield();
+    }
     preload('/static/bg.4k.webp').then(url => {
         console.log('loaded 4k image');
         body.style.backgroundImage = `url('${url}')`;
