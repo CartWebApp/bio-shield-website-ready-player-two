@@ -21,6 +21,7 @@ Bio-Shield
         min-width: 25vw;
         & > .carousel {
             display: grid;
+            scroll-snap-type: y mandatory;
             grid-template-rows: 1;
             transform: translateY(-0.2em);
             gap: 1em;
@@ -38,6 +39,7 @@ Bio-Shield
                 border-radius: 0.5em;
             }
             & .img_wrapper {
+                scroll-snap-align: start;
                 width: 6em;
                 height: 6em;
                 margin: auto;
