@@ -40,7 +40,7 @@
 body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
-    background: url('/static/bg.2k.webp') no-repeat center/cover;
+    background: url('/static/bg.2k.webp') no-repeat top/100% black;
     background-position-y: 2em;
     color: white;
     align-items: center;
@@ -211,31 +211,31 @@ nav span a:not(:has(img)) {
 @keyframes pulsate {
     0%,
     100% {
-        box-shadow: var(--base-dark) 0em 0em 9em 0em;
+        box-shadow: var(--base-dark) 0em 0em 6em 0em;
     }
     10% {
-        box-shadow: var(--base-dark) 0em 0em 8em 0em;
+        box-shadow: var(--base-dark) 0em 0em 5.5em 0em;
     }
     20% {
-        box-shadow: var(--base-dark) 0em 0em 7em 0em;
-    }
-    30% {
-        box-shadow: var(--base-dark) 0em 0em 6em 0em;
-    }
-    40% {
         box-shadow: var(--base-dark) 0em 0em 5em 0em;
     }
+    30% {
+        box-shadow: var(--base-dark) 0em 0em 4.5em 0em;
+    }
+    40% {
+        box-shadow: var(--base-dark) 0em 0em 4em 0em;
+    }
     50% {
-        box-shadow: var(--base-dark) 0em 0em 6em 0em;
+        box-shadow: var(--base-dark) 0em 0em 4.5em 0em;
     }
     60% {
-        box-shadow: var(--base-dark) 0em 0em 7em 0em;
+        box-shadow: var(--base-dark) 0em 0em 5em 0em;
     }
     80% {
-        box-shadow: var(--base-dark) 0em 0em 8em 0em;
+        box-shadow: var(--base-dark) 0em 0em 5.5em 0em;
     }
     90% {
-        box-shadow: var(--base-dark) 0em 0em 9em 0em;
+        box-shadow: var(--base-dark) 0em 0em 6em 0em;
     }
 }
 
@@ -257,6 +257,7 @@ nav span a:not(:has(img)) {
     line-height: 1.5em;
     font-size: 1.3em;
     text-align: left;
+    min-width: 75vw;
     & p {
         margin-top: 1em;
     }
