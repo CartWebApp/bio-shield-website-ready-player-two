@@ -1,7 +1,7 @@
 @font-face {
     font-family: 'DM Serif Display';
     font-display: swap;
-    src: url('/static/fonts/DMSerifDisplay-Regular.ttf');
+    src: url('/static/fonts/DMSerifDisplay-Regular.woff2');
 }
 
 :root {
@@ -15,7 +15,7 @@
 body {
     margin: 0;
     font-family: 'Inter', Arial, sans-serif;
-    background: url('./static/bg.2k.webp') no-repeat center/cover;
+    background: url('/static/bg.2k.webp') no-repeat center/cover;
     background-position-y: 2em;
     color: white;
     align-items: center;
