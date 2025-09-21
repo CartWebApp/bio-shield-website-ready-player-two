@@ -791,6 +791,12 @@ async function transform(
               'utf-8'
           )
         : '';
+    const css = existsSync(join(process.cwd(), 'src', 'routes', '+base.css'))
+        ? readFileSync(
+              join(process.cwd(), 'src', 'routes', '+base.css'),
+              'utf-8'
+          )
+        : '';
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
@@ -835,6 +841,7 @@ async function transform(
                 };
             }());
         </script>
+        ${css !== '' ? `<style>${css}</style>` : ''}
     </head>
     <body>
         ${base.split(/\n{4}/)[0]}

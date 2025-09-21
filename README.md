@@ -79,6 +79,10 @@ If you have a `+client.js` file in the same folder as a route, it will be inline
 
 Since it's very likely that your `<head>` contents will be the same for each page, you can declare `<head>` contents in `src/routes/+head.html`. These will be added to each route. Additionally, for `<body>` content such as navbars and footers, you can use `src/routes/+base.html`. Contents before 4 line breaks will be placed at the top of the `<body>`, contents after will be placed at the bottom.
 
+### CSS
+
+To reuse CSS across every route, create a `+base.css` file at your root route. It will be inlined with each route.
+
 ## Types
 
 To appease TypeScript, we generate ambient `d.ts` files on the fly for each route. This allows us to have typed `useContext` and `useParams`. You can use these type declarations via a [triple-slash directive](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html):
@@ -115,4 +119,4 @@ export default function load(request) {
 
 ### SSR
 
-While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function, or use a templating syntax to render dynamic content on the server. Additionally, we provide an `element` helper that takes a tag, props, and children to return an HTML element as a string. 
+While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function, or use a templating syntax to render dynamic content on the server. Additionally, we provide an `element` helper that takes a tag, props, and children to return an HTML element as a string.
