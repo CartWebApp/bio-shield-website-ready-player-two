@@ -6,9 +6,11 @@
 /** @import { __RemoteFunctionResponseBody, RemoteQuery, RemoteCommand, __RemoteFunctionRequestBody, RemoteQueryFunction, MaybePromise } from '../types.js' */
 /** @import { Request, Response } from 'express' */
 /** @import { StandardSchemaV1 } from '@standard-schema/spec' */
-import { remote_endpoints } from '../index.js';
+import { remote_endpoints, remote_functions } from '../index.js';
+import { writeFileSync, readFileSync } from 'fs';
 import { parse, stringify } from 'devalue';
-let remote_id = 0;
+import { join } from 'path';
+let remote_id = JSON.parse(readFileSync(join(process.cwd(), 'src', 'server', 'remote', 'remote.json'), 'utf-8'));
 /** @type {Array<{ promise: Promise<void>; id: number; argument: any; resolved: boolean; error: string; result: string; success: boolean }> | null} */
 let pending_refreshers = null;
 
@@ -57,6 +59,7 @@ export function query(validate_or_fn, maybe_fn) {
             ? maybe_fn
             : /** @type {T} */ (validate_or_fn);
     const id = remote_id++;
+    writeFileSync(join(process.cwd(), 'src', 'server', 'remote', 'remote.json'), id.toString());
     console.log(id);
     /**
      * @param {Request} req
@@ -97,7 +100,7 @@ export function query(validate_or_fn, maybe_fn) {
     }
     remote_endpoints.set(`/:${id}`, handle);
     console.log([...remote_endpoints.keys()]);
-    return /** @type {RemoteQueryFunction<T>} */ (
+    const res = /** @type {RemoteQueryFunction<T>} */ (
         Object.assign(
             /** @type {RemoteQueryFunction<T>} */ (
                 arg => {
@@ -184,6 +187,8 @@ export function query(validate_or_fn, maybe_fn) {
             { __remote: { id, type: 'query' } }
         )
     );
+    remote_functions.set(res, handle);
+    return res;
 }
 
 // these types were modified
@@ -295,7 +300,7 @@ export function command(validate_or_fn, maybe_fn) {
         pending_refreshers = null;
     }
     remote_endpoints.set(`/:${id}`, handle);
-    return /** @type {RemoteCommand<Input, Output>} */ (
+    const res = /** @type {RemoteCommand<Input, Output>} */ (
         Object.assign(
             /** @type {RemoteCommand<Input, Output>} */ (
                 arg => {
@@ -330,4 +335,6 @@ export function command(validate_or_fn, maybe_fn) {
             { __remote: { id, type: 'command' } }
         )
     );
+    remote_functions.set(res, handle);
+    return res;
 }

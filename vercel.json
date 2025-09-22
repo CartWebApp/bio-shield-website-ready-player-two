@@ -4,9 +4,8 @@
     "framework": "express",
     "functions": {
         "api/index.js": {
-            "includeFiles": "src/{**,**/*.{html,png,ico,webmanifest,svg,jpg,ttf,webp,css}",
-            "excludeFiles": "{.git,node_modules}/**",
-            "maxDuration": 60
+            "includeFiles": "src/{**,**/*.{html,png,ico,webmanifest,svg,jpg,ttf,webp,css,json}",
+            "excludeFiles": "{.git,node_modules}/**"
         }
     }
 }

@@ -9,7 +9,8 @@ import {
     existsSync,
     statSync,
     readdirSync,
-    writeFileSync
+    writeFileSync,
+    mkdirSync
 } from 'fs';
 import { DEV } from 'esm-env';
 import express from 'express';
@@ -26,6 +27,8 @@ const app = express();
 export let active_route = null;
 /** @type {Map<string, (req: Request, res: Response) => Promise<void>>} */
 export const remote_endpoints = new Map();
+/** @type {Map<object, (req: Request, res: Response) => Promise<void>>} */
+export const remote_functions = new Map();
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -375,6 +378,11 @@ async function transform_remote_module(path) {
     const res = ["import { query, command } from '#remote';"];
     let i = 0;
     const module = await import(`file:${sep}${sep}${path}`);
+    if (
+        !existsSync(join(process.cwd(), 'src', 'server', 'remote', 'entries'))
+    ) {
+        mkdirSync(join(process.cwd(), 'src', 'server', 'remote', 'entries'));
+    }
     for (const [key, value] of Object.entries(module)) {
         if (
             typeof value === 'function' &&
@@ -397,9 +405,38 @@ async function transform_remote_module(path) {
                         : `'${key.replace(/(\\|')/g, m => `\\${m}`)}'`
                 } };`
             );
+            writeFileSync(
+                join(
+                    process.cwd(),
+                    'src',
+                    'server',
+                    'remote',
+                    'entries',
+                    `${__remote.id}.js`
+                ),
+                `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(/\\/g, '\\\\')}'`
+            );
         }
     }
     return res.join('\n');
+}
+
+/**
+ * @param {number} entry_id
+ */
+async function load_remote_function(entry_id) {
+    const { default: remote } = await import(
+        `file:${sep}${sep}${join(
+            process.cwd(),
+            'src',
+            'server',
+            'remote',
+            'entries',
+            `${entry_id}.js`
+        )}`
+    );
+    const handler = remote_functions.get(remote);
+    return /** @type {NonNullable<typeof handler>} */ (handler);
 }
 
 app.use(express.text());
@@ -411,17 +448,16 @@ app.use(async (req, res, next) => {
         );
         return;
     }
-    console.log([...remote_endpoints.keys()]);
-    const remote = remote_endpoints.get(req.path);
-    console.log(remote);
     console.log(req.method);
     console.log(req.headers['remote_query']);
     if (
-        typeof remote === 'function' &&
+        req.path.match(/^\/\:[0-9]+$/) &&
         req.headers['remote_query'] === 'true' &&
         req.method === 'POST'
     ) {
-        await remote(req, res);
+        await (
+            await load_remote_function(Number(req.path.slice(2)))
+        )(req, res);
         return;
     }
     /**
