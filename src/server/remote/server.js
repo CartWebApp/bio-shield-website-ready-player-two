@@ -10,19 +10,20 @@ import app, { remote_endpoints, remote_functions } from '../index.js';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { parse, stringify } from 'devalue';
 import { join } from 'path';
-let remote_json = existsSync('/tmp')
-    ? '/tmp/remote.json'
-    : join(process.cwd(), 'src', 'server', 'remote', 'remote.json');
-if (existsSync('/tmp')) {
-    console.log('tmp exists!');
-    writeFileSync('/tmp/remote.json', '0');
-}
-let remote_id = JSON.parse(
-    readFileSync(
-        remote_json,
-        'utf-8'
-    )
-);
+// let remote_json = existsSync('/tmp')
+//     ? '/tmp/remote.json'
+//     : join(process.cwd(), 'src', 'server', 'remote', 'remote.json');
+// if (existsSync('/tmp')) {
+//     console.log('tmp exists!');
+//     writeFileSync('/tmp/remote.json', '0');
+// }
+// let remote_id = JSON.parse(
+//     readFileSync(
+//         remote_json,
+//         'utf-8'
+//     )
+// );
+let remote_id = 0;
 /** @type {Array<{ promise: Promise<void>; id: number; argument: any; resolved: boolean; error: string; result: string; success: boolean }> | null} */
 let pending_refreshers = null;
 
@@ -71,10 +72,10 @@ export function query(validate_or_fn, maybe_fn) {
             ? maybe_fn
             : /** @type {T} */ (validate_or_fn);
     const id = remote_id++;
-    writeFileSync(
-        remote_json,
-        id.toString()
-    );
+    // writeFileSync(
+    //     remote_json,
+    //     id.toString()
+    // );
     console.log(id);
     /**
      * @param {Request} req
