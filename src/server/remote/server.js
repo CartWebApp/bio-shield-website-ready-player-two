@@ -114,7 +114,7 @@ export function query(validate_or_fn, maybe_fn) {
             res.json(response);
         }
     }
-    app.post(`/%${id}`, handle);
+    app.post(`/(${id}`, handle);
     remote_endpoints.set(`/:${id}`, handle);
     console.log([...remote_endpoints.keys()]);
     const res = /** @type {RemoteQueryFunction<T>} */ (
@@ -317,7 +317,7 @@ export function command(validate_or_fn, maybe_fn) {
         pending_refreshers = null;
     }
     // remote_endpoints.set(`/:${id}`, handle);
-    app.post(`/%${id}`, handle);
+    app.post(`/(${id}`, handle);
     const res = /** @type {RemoteCommand<Input, Output>} */ (
         Object.assign(
             /** @type {RemoteCommand<Input, Output>} */ (
