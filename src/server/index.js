@@ -25,6 +25,8 @@ const app = express();
 /** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> } & Body} Route */
 /** @type {Route | null} */
 export let active_route = null;
+export let remote_id = 0;
+export const increment_remote_id = () => remote_id++;
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -367,23 +369,26 @@ function is_error_object(err) {
     return true;
 }
 
-// iiuc vercel functions _don't_ reuse the same process upon rerunning
-// so we have to import every `.remote.js` function upon initialization
-for (const path of readdirSync(join(process.cwd(), 'src', 'routes'), {
-    withFileTypes: true,
-    recursive: true
-})) {
-    if (!path.isFile() || !/\.remote\.js$/.test(path.name)) continue;
-    import(`file:${sep}${sep}${join(path.parentPath, path.name)}`);
-}
+// // iiuc vercel functions _don't_ reuse the same process upon rerunning
+// // so we have to import every `.remote.js` function upon initialization
+// for (const path of readdirSync(join(process.cwd(), 'src', 'routes'), {
+//     withFileTypes: true,
+//     recursive: true
+// })) {
+//     if (!path.isFile() || !/\.remote\.js$/.test(path.name)) continue;
+//     import(`file:${sep}${sep}${join(path.parentPath, path.name)}`);
+// }
 
 /**
  * @param {string} path
+ * @param {string} req_path
  */
-async function transform_remote_module(path) {
+async function transform_remote_module(path, req_path) {
     const res = ["import { query, command } from '#remote';"];
     let i = 0;
+    remote_id = 0;
     const module = await import(`file:${sep}${sep}${path}`);
+    assign_names(module);
     for (const [key, value] of Object.entries(module)) {
         if (
             typeof value === 'function' &&
@@ -398,7 +403,12 @@ async function transform_remote_module(path) {
                 continue;
             }
             let id = i++;
-            res.push(`let x${id} = ${__remote.type}(${__remote.id});`);
+            res.push(
+                `let x${id} = ${__remote.type}('${req_path}', '${key.replace(
+                    /'/g,
+                    "\\'"
+                )}', ${__remote.id});`
+            );
             res.push(
                 `export { x${id} as ${
                     regex_is_valid_identifier.test(key)
@@ -409,6 +419,49 @@ async function transform_remote_module(path) {
         }
     }
     return res.join('\n');
+}
+
+/**
+ * @param {Record<string, Function & { __remote: { name(name: string): void }}} module
+ */
+function assign_names(module) {
+    for (const [key, value] of Object.entries(module)) {
+        if (
+            typeof value !== 'function' ||
+            !('__remote' in value) ||
+            typeof value.__remote !== 'object' ||
+            value.__remote === null ||
+            !('handle' in  value.__remote) ||
+            typeof value.__remote.name !== 'function'
+        ) {
+            continue;
+        }
+        value.__remote.name(key);
+    }
+}
+
+/**
+ * @param {string} path
+ * @param {string} remote_function
+ */
+async function get_remote_function(path, remote_function) {
+    const [key, id] = deserialize(remote_function);
+    remote_id = 0;
+    const module = await import(`file:${sep}${sep}${path}`);
+    assign_names(module);
+    const { [key]: fn } = module;
+    console.log(id, fn.__remote.id);
+    if (
+        typeof fn !== 'function' ||
+        !('__remote' in fn) ||
+        typeof fn.__remote !== 'object' ||
+        fn.__remote === null ||
+        !('handle' in fn.__remote) ||
+        typeof fn.__remote.handle !== 'function'
+    ) {
+        return;
+    }
+    return fn.__remote.handle;
 }
 
 app.use(express.text());
@@ -472,8 +525,22 @@ app.use(async (req, res, next) => {
         const html_path = join(path, 'index.html');
         if (stats?.isFile()) {
             if (path.endsWith('.remote.js')) {
+                if (
+                    req.method === 'POST' &&
+                    typeof req.headers['remote_function'] === 'string'
+                ) {
+                    const handler = await get_remote_function(
+                        path,
+                        req.headers['remote_function']
+                    );
+                    if (typeof handler === 'function') {
+                        await handler(req, res);
+                        return;
+                    }
+                }
                 res.contentType('.js');
-                res.send(await transform_remote_module(path));
+                res.send(await transform_remote_module(path, req.path));
+
                 return;
             }
             const type = path.split('.').at(-1);

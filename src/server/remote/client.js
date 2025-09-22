@@ -9,28 +9,31 @@
 import { parse, stringify } from 'devalue';
 /** @typedef {{ current: any; error: any }} RemoteQueryContext */
 /** @typedef {{ query: RemoteQuery<any>; set(context: RemoteQueryContext): void }} RemoteQueryEntry */
-/** @type {Map<number, Map<any, RemoteQueryEntry>>} */
+/** @type {Map<string, Map<any, RemoteQueryEntry>>} */
 const remote_queries = new Map();
-/** @type {Map<RemoteQuery<any>, { id: number; arg: any }>} */
+/** @type {Map<RemoteQuery<any>, { key: string; arg: any }>} */
 const remote_queries_dictionary = new Map();
-/** @type {Map<RemoteQueryOverride, { id: number; arg: any }>} */
+/** @type {Map<RemoteQueryOverride, { key: string; arg: any }>} */
 const overrides = new Map();
-/** @type {Set<{ id: number }>} */
+/** @type {Set<{ key: string }>} */
 const pending = new Set();
+let remote_id = 0;
 
 /**
+ * @param {string} path
+ * @param {string} key
  * @param {number} id
  * @returns {(arg: any) => RemoteQuery<any>}
  */
-export function query(id) {
-    if (typeof id !== 'number') {
+export function query(path, key, id) {
+    if (typeof path !== 'string') {
         throw new Error('remote functions must be exported');
     }
-    if (!remote_queries.has(id)) {
-        remote_queries.set(id, new Map());
+    if (!remote_queries.has(key)) {
+        remote_queries.set(key, new Map());
     }
     const queries = /** @type {Map<any, RemoteQueryEntry>} */ (
-        remote_queries.get(id)
+        remote_queries.get(key)
     );
 
     return arg => {
@@ -54,11 +57,11 @@ export function query(id) {
                                 /** @type {__RemoteFunctionRequestBody} */ ({
                                     argument: stringify(arg)
                                 });
-                            const res = await fetch('/', {
+                            const res = await fetch(path, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'text/plain',
-                                    remote_function: id.toString()
+                                    remote_function: stringify([key, id])
                                 },
                                 body: JSON.stringify(body)
                             });
@@ -128,7 +131,7 @@ export function query(id) {
                     }
                 };
                 overrides.set(override, {
-                    id,
+                    key: key,
                     arg
                 });
                 return override;
@@ -142,7 +145,7 @@ export function query(id) {
             }
         });
         remote_queries_dictionary.set(query, {
-            id,
+            key: key,
             arg
         });
         return query;
@@ -150,11 +153,13 @@ export function query(id) {
 }
 
 /**
+ * @param {string} path
+ * @param {string} key
  * @param {number} id
  * @returns {RemoteCommand<any, any>}
  */
-export function command(id) {
-    if (typeof id !== 'number') {
+export function command(path, key, id) {
+    if (typeof key !== 'string') {
         throw new Error('remote functions must be exported');
     }
     /**
@@ -162,11 +167,11 @@ export function command(id) {
      * @returns {ReturnType<RemoteCommand<any, any>>}
      */
     const res = arg => {
-        /** @type {Array<{ id: number; arg: any}> | undefined} */
+        /** @type {Array<{ key: string; arg: any }> | undefined} */
         let updates = undefined;
         const create_promise = () =>
             (promise = new Promise(async (resolve, reject) => {
-                const instance = { id, arg };
+                const instance = { key: key, arg };
                 pending.add(instance);
                 try {
                     resolve(
@@ -176,22 +181,22 @@ export function command(id) {
                                     argument: stringify(arg),
                                     queries:
                                         typeof updates === 'object'
-                                            ? updates.map(({ id, arg }) => ({
-                                                  id,
+                                            ? updates.map(({ key, arg }) => ({
+                                                  key,
                                                   argument: stringify(arg)
                                               }))
                                             : [
                                                   ...remote_queries_dictionary.values()
-                                              ].map(({ id, arg }) => ({
-                                                  id,
+                                              ].map(({ key, arg }) => ({
+                                                  key,
                                                   argument: stringify(arg)
                                               }))
                                 });
-                            const res = await fetch('/', {
+                            const res = await fetch(path, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'text/plain',
-                                    remote_function: id.toString()
+                                    remote_function: stringify([key, id])
                                 },
                                 body: JSON.stringify(body)
                             });
@@ -202,7 +207,7 @@ export function command(id) {
                             const { queries } = json;
                             if (typeof queries === 'object') {
                                 for (const query of queries) {
-                                    const map = remote_queries.get(query.id);
+                                    const map = remote_queries.get(query.key);
                                     if (map === undefined) {
                                         continue;
                                     }
@@ -249,18 +254,18 @@ export function command(id) {
             },
             updates(...queries) {
                 updates = [];
-                /** @type {Array<{ id: number; arg: any }>} */
+                /** @type {Array<{ key: string; arg: any }>} */
                 const _queries = [];
                 for (const query of queries) {
                     if ('release' in query) {
                         _queries.push(
-                            /** @type {{ id: number; arg: any }} */ (
+                            /** @type {{ key: string; arg: any }} */ (
                                 overrides.get(query)
                             )
                         );
                     } else {
                         _queries.push(
-                            /** @type {{ id: number; arg: any }} */ (
+                            /** @type {{ key: string; arg: any }} */ (
                                 remote_queries_dictionary.get(query)
                             )
                         );
@@ -274,7 +279,7 @@ export function command(id) {
     };
     Object.defineProperty(res, 'pending', {
         get() {
-            return [...pending].filter(({ id: _id }) => _id === id).length;
+            return [...pending].filter(({ key: _id }) => _id === key).length;
         }
     });
     return /** @type {RemoteCommand<any, any>} */ (res);

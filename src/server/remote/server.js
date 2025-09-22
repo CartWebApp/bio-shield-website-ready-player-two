@@ -6,11 +6,10 @@
 /** @import { __RemoteFunctionResponseBody, RemoteQuery, RemoteCommand, __RemoteFunctionRequestBody, RemoteQueryFunction, MaybePromise } from '../types.js' */
 /** @import { Request, Response } from 'express' */
 /** @import { StandardSchemaV1 } from '@standard-schema/spec' */
-import app from '../index.js';
+import app, { increment_remote_id, remote_id } from '../index.js';
 import { parse, stringify } from 'devalue';
 
-let remote_id = 0;
-/** @type {Array<{ promise: Promise<void>; id: number; argument: any; resolved: boolean; error: string; result: string; success: boolean }> | null} */
+/** @type {Array<{ promise: Promise<void>; key: string; id: number; argument: any; resolved: boolean; error: string; result: string; success: boolean }> | null} */
 let pending_refreshers = null;
 
 // these types were modified
@@ -57,7 +56,8 @@ export function query(validate_or_fn, maybe_fn) {
         typeof maybe_fn === 'function'
             ? maybe_fn
             : /** @type {T} */ (validate_or_fn);
-    const id = remote_id++;
+    const id = increment_remote_id();
+    let key = '';
 
     /**
      * @param {Request} req
@@ -96,16 +96,16 @@ export function query(validate_or_fn, maybe_fn) {
             res.json(response);
         }
     }
-    app.use('/', async (req, res, next) => {
-        if (
-            req.method !== 'POST' ||
-            Number(req.headers['remote_function']) !== id
-        ) {
-            next();
-            return;
-        }
-        await handle(req, res);
-    });
+    // app.use('/', async (req, res, next) => {
+    //     if (
+    //         req.method !== 'POST' ||
+    //         Number(req.headers['remote_function']) !== id
+    //     ) {
+    //         next();
+    //         return;
+    //     }
+    //     await handle(req, res);
+    // });
     return /** @type {RemoteQueryFunction<T>} */ (
         Object.assign(
             /** @type {RemoteQueryFunction<T>} */ (
@@ -149,7 +149,8 @@ export function query(validate_or_fn, maybe_fn) {
                         },
                         set(value) {
                             (pending_refreshers ??= []).push({
-                                id,
+                                id: id,
+                                key,
                                 promise: Promise.resolve(),
                                 resolved: true,
                                 argument: stringify(arg),
@@ -160,6 +161,7 @@ export function query(validate_or_fn, maybe_fn) {
                         },
                         refresh() {
                             const refresher = {
+                                key,
                                 id,
                                 argument: stringify(arg),
                                 promise: promise.then(
@@ -190,7 +192,14 @@ export function query(validate_or_fn, maybe_fn) {
                     });
                 }
             ),
-            { __remote: { id, type: 'query' } }
+            {
+                __remote: {
+                    id,
+                    type: 'query',
+                    handle,
+                    name: (/** @type {string} */ name) => (key = name)
+                }
+            }
         )
     );
 }
@@ -239,7 +248,8 @@ export function command(validate_or_fn, maybe_fn) {
         typeof maybe_fn === 'function'
             ? maybe_fn
             : /** @type {T} */ (validate_or_fn);
-    const id = remote_id++;
+    const id = increment_remote_id();
+    let key = '';
 
     /**
      * @param {Request} req
@@ -345,7 +355,14 @@ export function command(validate_or_fn, maybe_fn) {
                     });
                 }
             ),
-            { __remote: { id, type: 'command' } }
+            {
+                __remote: {
+                    id,
+                    type: 'command',
+                    handle,
+                    name: (/** @type {string} */ name) => (key = name)
+                }
+            }
         )
     );
 }
