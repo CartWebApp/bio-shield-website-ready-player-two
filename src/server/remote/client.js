@@ -17,6 +17,7 @@ const remote_queries_dictionary = new Map();
 const overrides = new Map();
 /** @type {Set<{ id: number }>} */
 const pending = new Set();
+console.log('this is a test to confirm my sanity');
 /**
  * @param {number} id
  * @returns {(arg: any) => RemoteQuery<any>}
