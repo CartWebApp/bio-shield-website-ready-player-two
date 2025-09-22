@@ -72,7 +72,7 @@ export function query(validate_or_fn, maybe_fn) {
             : /** @type {T} */ (validate_or_fn);
     const id = remote_id++;
     writeFileSync(
-        join(process.cwd(), 'src', 'server', 'remote', 'remote.json'),
+        remote_json,
         id.toString()
     );
     console.log(id);
