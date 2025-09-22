@@ -414,13 +414,18 @@ app.use(async (req, res, next) => {
     const remote = remote_endpoints.get(req.path);
     await new Promise(resolve => {
         let body = '';
-        req.on('data', (chunk) => {
-            body += chunk;
-        });
-        req.on('end', () => {
-            console.log(body);
-            resolve(null);
-        });
+        const read = req.read();
+        if (read) {
+            resolve(console.log(read));
+        } else {
+            req.on('data', (chunk) => {
+                body += chunk;
+            });
+            req.on('end', () => {
+                console.log(body);
+                resolve(null);
+            });
+        }
     });
     console.log(remote);
     console.log(req.method);
