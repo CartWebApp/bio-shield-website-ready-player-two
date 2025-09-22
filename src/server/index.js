@@ -472,7 +472,7 @@ app.use(async (req, res, next) => {
     }
     console.log(req.method);
     console.log(req.headers['remote_query']);
-    if (req.path.match(/^\/\(/) && req.method === 'POST') {
+    if (req.path.match(/^\/=/) && req.method === 'POST') {
         next();
         return;
     }
