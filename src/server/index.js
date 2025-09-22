@@ -379,9 +379,17 @@ async function transform_remote_module(path) {
     let i = 0;
     const module = await import(`file:${sep}${sep}${path}`);
     if (
-        !existsSync(join(process.cwd(), 'src', 'server', 'remote', 'entries'))
+        !existsSync(
+            existsSync('/tmp')
+                ? `/tmp/entries`
+                : join(process.cwd(), 'src', 'server', 'remote', 'entries')
+        )
     ) {
-        mkdirSync(join(process.cwd(), 'src', 'server', 'remote', 'entries'));
+        mkdirSync(
+            existsSync('/tmp')
+                ? `/tmp/entries`
+                : join(process.cwd(), 'src', 'server', 'remote', 'entries')
+        );
     }
     for (const [key, value] of Object.entries(module)) {
         if (
@@ -406,15 +414,20 @@ async function transform_remote_module(path) {
                 } };`
             );
             writeFileSync(
-                join(
-                    process.cwd(),
-                    'src',
-                    'server',
-                    'remote',
-                    'entries',
-                    `${__remote.id}.js`
-                ),
-                `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(/\\/g, '\\\\')}'`
+                existsSync('/tmp')
+                    ? `/tmp/entries/${__remote.id}.js`
+                    : join(
+                          process.cwd(),
+                          'src',
+                          'server',
+                          'remote',
+                          'entries',
+                          `${__remote.id}.js`
+                      ),
+                `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(
+                    /\\/g,
+                    '\\\\'
+                )}'`
             );
         }
     }
@@ -426,14 +439,18 @@ async function transform_remote_module(path) {
  */
 async function load_remote_function(entry_id) {
     const { default: remote } = await import(
-        `file:${sep}${sep}${join(
-            process.cwd(),
-            'src',
-            'server',
-            'remote',
-            'entries',
-            `${entry_id}.js`
-        )}`
+        `file:${sep}${sep}${
+            existsSync('/tmp')
+                ? `/tmp/entries/${entry_id}.js`
+                : join(
+                      process.cwd(),
+                      'src',
+                      'server',
+                      'remote',
+                      'entries',
+                      `${entry_id}.js`
+                  )
+        }`
     );
     const handler = remote_functions.get(remote);
     return /** @type {NonNullable<typeof handler>} */ (handler);
