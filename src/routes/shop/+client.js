@@ -25,12 +25,11 @@ function Enum(...keys) {
     );
 }
 const SORT_TYPES = Enum(
+    'Popularity',
     'A - Z',
     'Z - A',
     'Asc. Price',
     'Desc. Price',
-    'Asc. Views',
-    'Desc. Views'
 );
 /**
  * @template {keyof HTMLElementTagNameMap} Tag
@@ -100,15 +99,7 @@ async function sort(products, type) {
                 )
             );
         }
-        case SORT_TYPES['Asc. Views']: {
-            await views.refresh();
-            const { current } = views;
-            if (typeof current !== 'object') return products;
-            return Object.fromEntries(
-                entries.toSorted(([a], [b]) => current[a] - current[b])
-            );
-        }
-        case SORT_TYPES['Desc. Views']: {
+        case SORT_TYPES['Popularity']: {
             await views.refresh();
             const { current } = views;
             if (typeof current !== 'object') return products;
