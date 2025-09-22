@@ -412,21 +412,23 @@ app.use(async (req, res, next) => {
         return;
     }
     const remote = remote_endpoints.get(req.path);
-    await new Promise(resolve => {
-        let body = '';
-        const read = req.read();
-        if (read) {
-            resolve(console.log(read));
-        } else {
-            req.on('data', (chunk) => {
-                body += chunk;
-            });
-            req.on('end', () => {
-                console.log(body);
-                resolve(null);
-            });
-        }
-    });
+    if (req.method === 'POST') {
+        await new Promise(resolve => {
+            let body = '';
+            const read = req.read();
+            if (read) {
+                resolve(console.log(read));
+            } else {
+                req.on('data', (chunk) => {
+                    body += chunk;
+                });
+                req.on('end', () => {
+                    console.log(body);
+                    resolve(null);
+                });
+            }
+        });
+    }
     console.log(remote);
     console.log(req.method);
     console.log(req.headers['remote_query']);
