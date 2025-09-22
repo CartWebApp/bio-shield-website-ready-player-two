@@ -7,5 +7,11 @@
             "includeFiles": "src/{**,**/*.{html,png,ico,webmanifest,svg,jpg,ttf,webp,css}",
             "excludeFiles": "{.git,node_modules}/**"
         }
-    }
+    },
+    "redirects": [
+        {
+            "source": "/(.*)",
+            "destination": "src/app.js"
+        }
+    ]
 }
