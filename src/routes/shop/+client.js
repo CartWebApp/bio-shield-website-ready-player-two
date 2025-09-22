@@ -29,7 +29,7 @@ const SORT_TYPES = Enum(
     'A - Z',
     'Z - A',
     'Asc. Price',
-    'Desc. Price',
+    'Desc. Price'
 );
 /**
  * @template {keyof HTMLElementTagNameMap} Tag

@@ -56,7 +56,8 @@ export function query(id) {
                             const res = await fetch(`/:${id}`, {
                                 method: 'POST',
                                 headers: {
-                                    'Content-Type': 'text/plain'
+                                    'Content-Type': 'text/plain',
+                                    'remote_query': 'true'
                                 },
                                 body: JSON.stringify(body)
                             });
@@ -188,7 +189,8 @@ export function command(id) {
                             const res = await fetch(`/:${id}`, {
                                 method: 'POST',
                                 headers: {
-                                    'Content-Type': 'text/plain'
+                                    'Content-Type': 'text/plain',
+                                    'remote_query': 'true'
                                 },
                                 body: JSON.stringify(body)
                             });

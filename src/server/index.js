@@ -413,7 +413,11 @@ app.use(async (req, res, next) => {
         return;
     }
     const remote = remote_endpoints.get(req.path);
-    if (typeof remote === 'function') {
+    if (
+        typeof remote === 'function' &&
+        req.headers['remote_query'] === 'true' &&
+        req.method === 'POST'
+    ) {
         await remote(req, res);
         return;
     }

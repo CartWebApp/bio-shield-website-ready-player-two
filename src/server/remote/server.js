@@ -62,9 +62,6 @@ export function query(validate_or_fn, maybe_fn) {
      * @param {Response} res
      */
     async function handle(req, res) {
-        if (req.method !== 'POST') {
-            return;
-        }
         /** @type {__RemoteFunctionRequestBody} */
         const body = JSON.parse(req.body);
         const argument =
@@ -238,9 +235,6 @@ export function command(validate_or_fn, maybe_fn) {
      * @param {Response} res
      */
     async function handle(req, res) {
-        if (req.method !== 'POST') {
-            return;
-        }
         /** @type {__RemoteFunctionRequestBody} */
         const body = JSON.parse(req.body);
         const argument = parse(body.argument);
