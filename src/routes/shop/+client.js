@@ -2,6 +2,7 @@
 /** @import { Context } from './types.js' */
 // @ts-check
 /// <reference path="./types.d.ts" />
+import { get_views } from './views.remote.js';
 const products = useContext('products');
 const list = /** @type {HTMLDivElement} */ (
     document.querySelector('.products')
@@ -23,7 +24,14 @@ function Enum(...keys) {
         )
     );
 }
-const SORT_TYPES = Enum('A - Z', 'Z - A', 'Asc. Price', 'Desc. Price');
+const SORT_TYPES = Enum(
+    'A - Z',
+    'Z - A',
+    'Asc. Price',
+    'Desc. Price',
+    'Asc. Views',
+    'Desc. Views'
+);
 /**
  * @template {keyof HTMLElementTagNameMap} Tag
  * @param {Tag} type
@@ -60,12 +68,14 @@ function element(type, props = null, ...children) {
     return elem;
 }
 
+const views = get_views(undefined);
+
 /**
  * @param {Context['products']} products
  * @param {(typeof SORT_TYPES)[keyof typeof SORT_TYPES]} type
- * @returns {Record<string, Product>}
+ * @returns {Promise<Record<string, Product>>}
  */
-function sort(products, type) {
+async function sort(products, type) {
     const entries = Object.entries(products);
     switch (type) {
         case SORT_TYPES['A - Z']: {
@@ -76,7 +86,7 @@ function sort(products, type) {
         }
         case SORT_TYPES['Asc. Price']: {
             return Object.fromEntries(
-                entries.sort(
+                entries.toSorted(
                     ([, { price: a_price }], [, { price: b_price }]) =>
                         a_price - b_price
                 )
@@ -84,10 +94,26 @@ function sort(products, type) {
         }
         case SORT_TYPES['Desc. Price']: {
             return Object.fromEntries(
-                entries.sort(
+                entries.toSorted(
                     ([, { price: a_price }], [, { price: b_price }]) =>
                         b_price - a_price
                 )
+            );
+        }
+        case SORT_TYPES['Asc. Views']: {
+            await views.refresh();
+            const { current } = views;
+            if (typeof current !== 'object') return products;
+            return Object.fromEntries(
+                entries.toSorted(([a], [b]) => current[a] - current[b])
+            );
+        }
+        case SORT_TYPES['Desc. Views']: {
+            await views.refresh();
+            const { current } = views;
+            if (typeof current !== 'object') return products;
+            return Object.fromEntries(
+                entries.toSorted(([a], [b]) => current[b] - current[a])
             );
         }
     }
@@ -104,7 +130,7 @@ function render(products) {
             element(
                 'a',
                 {
-                    href: `/shop/${endpoint}`
+                    href: `/shop/${endpoint}/`
                 },
                 element(
                     'div',
@@ -131,9 +157,9 @@ function render(products) {
 const sorter = /** @type {HTMLSelectElement} */ (
     document.querySelector('select')
 );
-sorter.addEventListener('input', () => {
+sorter.addEventListener('input', async () => {
     render(
-        sort(
+        await sort(
             products,
             SORT_TYPES[/** @type {keyof typeof SORT_TYPES} */ (sorter.value)]
         )

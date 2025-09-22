@@ -26,7 +26,7 @@ const app = express();
 /** @type {Route | null} */
 export let active_route = null;
 /** @type {Map<string, (req: Request, res: Response) => Promise<void>>} */
-export const remote_endpoints = new Map;
+export const remote_endpoints = new Map();
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -217,7 +217,7 @@ function generate_types(path) {
         }
         dir = next;
     }
-    let type_declarations = `import type { __Request, __LoadFunction, __MergeContext } from \'#__types\';\nexport {};\n`;
+    let type_declarations = `import type {\n\t__Request,\n\t__LoadFunction,\n\t__MergeContext,\n\tMaybePromise,\n\tRemoteQuery as _RemoteQuery,\n\tRemoteCommand as _RemoteCommand,\n\tRemoteQueryFunction as _RemoteQueryFunction,\n\tRemoteQueryOverride as _RemoteQueryOverride,\n\tRemoteResource as _RemoteResource\n} from \'#__types\';\n\n`;
     if (Object.keys(context.context).length > 0) {
         const ctx = context.context;
         type_declarations += `export type Context = __MergeContext<[{\n`;
@@ -282,6 +282,20 @@ function generate_types(path) {
     type_declarations += generate_param_type(params);
     type_declarations += `export type Request = __Request<Params>;\n`;
     type_declarations += `export type LoadFunction<T extends {} | null | void> = __LoadFunction<Request, T>;\n`;
+    type_declarations += `
+// @ts-ignore
+declare module '#remote' {
+    // @ts-ignore
+    export type RemoteQuery<T> = _RemoteQuery<T>;
+    // @ts-ignore
+    export type RemoteCommand<Input, Output> = _RemoteCommand<Input, Output>;
+    // @ts-ignore
+    export type RemoteQueryFunction<T extends (arg?: any) => MaybePromise<any>> = _RemoteQueryFunction<T>;
+    // @ts-ignore
+    export type RemoteQueryOverride = _RemoteQueryOverride;
+    // @ts-ignore
+    export type RemoteResource<T> = _RemoteResource<T>;
+}\n`;
     return type_declarations;
 }
 
@@ -354,11 +368,54 @@ function is_error_object(err) {
         return false;
     return true;
 }
+
+/**
+ * @param {string} path
+ */
+async function transform_remote_module(path) {
+    const res = ["import { query, command } from '#remote';"];
+    let i = 0;
+    const module = await import(`file:${sep}${sep}${path}`);
+    for (const [key, value] of Object.entries(module)) {
+        if (
+            typeof value === 'function' &&
+            '__remote' in value &&
+            typeof value.__remote === 'object'
+        ) {
+            const { __remote } = value;
+            if (
+                __remote === null ||
+                !('id' in __remote && 'type' in __remote)
+            ) {
+                continue;
+            }
+            let id = i++;
+            res.push(`let x${id} = ${__remote.type}(${__remote.id});`);
+            res.push(
+                `export { x${id} as ${
+                    regex_is_valid_identifier.test(key)
+                        ? key
+                        : `'${key.replace(/(\\|')/g, m => `\\${m}`)}'`
+                } };`
+            );
+        }
+    }
+    return res.join('\n');
+}
+
 app.use(body_parser.text());
 app.use(async (req, res, next) => {
+    if (req.path === '/:remote') {
+        res.contentType('.js');
+        res.sendFile(
+            join(process.cwd(), 'src', 'server', 'remote', 'bundle.js')
+        );
+        return;
+    }
     const remote = remote_endpoints.get(req.path);
     if (typeof remote === 'function') {
-        return remote(req, res);
+        await remote(req, res);
+        return;
     }
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
@@ -392,16 +449,37 @@ app.use(async (req, res, next) => {
         }
     }
     if (req.path === 'events' && DEV) return next();
-    const path = join(process.cwd(), 'src', 'routes', ...req.path.split('/'));
+    const path = join(
+        process.cwd(),
+        'src',
+        'routes',
+        ...req.path.split('/').slice(1)
+    );
     const prefetching = typeof req.query.prefetching === 'string';
     if (existsSync(path)) {
         const stats = statSync(path, { throwIfNoEntry: false });
+        const html_path = join(path, 'index.html');
         if (stats?.isFile()) {
+            if (path.endsWith('.remote.js')) {
+                res.contentType('.js');
+                res.send(await transform_remote_module(path));
+                return;
+            }
             const type = path.split('.').at(-1);
             res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
             res.sendFile(path);
-        } else if (stats) {
-            const html_path = join(path, 'index.html');
+            return;
+        } else if (
+            stats &&
+            existsSync(html_path) &&
+            statSync(html_path).isFile()
+        ) {
+            if (!req.path.endsWith('/')) {
+                res.redirect(
+                    `${req.path}/${prefetching ? '?prefetching=true' : ''}`
+                );
+                return;
+            }
             const template = readFileSync(html_path, 'utf-8');
             res.contentType('.html');
             try {
@@ -426,7 +504,9 @@ app.use(async (req, res, next) => {
                 );
                 await error({ err });
             }
+            return;
         }
+        await error();
         return;
     } else {
         const parsed_params = params(path);
@@ -434,12 +514,20 @@ app.use(async (req, res, next) => {
             const stats = statSync(parsed_params.path, {
                 throwIfNoEntry: false
             });
+            const path = parsed_params.path;
+            const html_path = join(path, 'index.html');
             if (stats?.isFile()) {
                 const type = parsed_params.path.split('.').at(-1);
                 res.contentType(`.${type === 'ts' ? 'txt' : type ?? 'txt'}`);
-            } else {
-                const path = parsed_params.path;
-                const html_path = join(path, 'index.html');
+                res.sendFile(parsed_params.path);
+                return;
+            } else if (existsSync(html_path) && statSync(html_path).isFile()) {
+                if (!req.path.endsWith('/')) {
+                    res.redirect(
+                        `${req.path}/${prefetching ? '?prefetching=true' : ''}`
+                    );
+                    return;
+                }
                 const template = readFileSync(html_path, 'utf-8');
                 res.contentType('.html');
                 try {
@@ -464,10 +552,11 @@ app.use(async (req, res, next) => {
                                 ? _err
                                 : { message: STATUS_CODES[500], status: 500 }
                         );
-                    await error({ err });
+                    await error({ err, params: parsed_params.params });
                 }
+                return;
             }
-            return;
+            await error({ params: parsed_params.params });
         } else {
             await error({ params: parsed_params.params });
         }
@@ -801,6 +890,17 @@ async function transform(
     return `<!DOCTYPE html>
 <html lang="en">
     <head>
+        ${
+            prefetching
+                ? ''
+                : `<script type="importmap">
+            {
+                "imports": {
+                    "#remote": "/:remote"
+                }
+            }
+        </script>`
+        }
         ${head}
         <title>${route.title !== '' ? route.title : escape(title)}</title>
         ${

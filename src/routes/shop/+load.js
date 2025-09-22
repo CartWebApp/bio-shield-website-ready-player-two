@@ -1,25 +1,30 @@
 /// <reference path="./types.d.ts" />
 /** @import { Context, LoadFunction } from './types.js' */
 import { element, escape, insert, useContext } from '#server';
+import { init, state } from '../../lib/state.js';
 
 /** @type {LoadFunction<void>} */
 export default function load(request) {
+    const { products } = useContext();
+    init(
+        Object.keys(products).reduce((acc, key) => ({ ...acc, [key]: 0 }), {})
+    );
     // while the replacement here won't affect the individual product pages,
     // it doesn't help TTFB
-    if (request.path !== '/shop') {
+    if (request.path !== '/shop/') {
         return;
     }
-    const { products } = useContext();
     insert.body.replace(body => {
         const list = [];
+        const current = /** @type {NonNullable<typeof state>} */ (state);
         for (const [endpoint, { images, name, price }] of Object.entries(
             products
-        )) {
+        ).toSorted(([a], [b]) => current[b] - current[a])) {
             list.push(
                 element(
                     'a',
                     {
-                        href: `/shop/${endpoint}`
+                        href: `/shop/${endpoint}/`
                     },
                     element(
                         'div',
