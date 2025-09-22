@@ -419,10 +419,12 @@ app.use(async (req, res, next) => {
                 resolve(console.log(req.read()));
             } else {
                 req.on('readable', () => {
-                    console.log(req.readable)
+                    console.log(req.read());
+                    resolve(null);
                 })
                 req.on('data', (chunk) => {
                     body += chunk;
+                    console.log(chunk);
                 });
                 req.on('end', () => {
                     console.log(body);
