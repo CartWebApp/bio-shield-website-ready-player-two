@@ -1,4 +1,3 @@
 node_modules
 .vercel
 src/server/remote/entries
-remote.json
