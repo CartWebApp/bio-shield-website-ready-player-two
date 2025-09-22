@@ -412,7 +412,7 @@ app.use(async (req, res, next) => {
         return;
     }
     const remote = remote_endpoints.get(req.path);
-    if (req.method === 'POST') {
+    if (req.method === 'POST' && !isNaN(Number(req.headers['content-length']))) {
         await new Promise(resolve => {
             let body = '';
             const read = req.read();
