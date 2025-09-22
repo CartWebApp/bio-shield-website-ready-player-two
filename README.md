@@ -17,6 +17,9 @@ pnpm i && pnpm dev
 
 Routes are placed in `src/routes`. To (for example) make a page for `/blog`, make a folder in `src/routes` named `blog` and make a file named `index.html` inside `src/routes/blog`.
 
+> [!NOTE]
+> Trailing slashes are automatically added to routes. This means that, for example, importing `./module.js` in `/blog` will resolve to `./blog/module.js` as opposed to `./module.js`.
+
 ### Context
 
 A page can be provided _context_ from adjacent folders. Context is a way to aggregate related modules on the server into an object that can be used on the client. To declare some context, create a folder with its name wrapped in parentheses inside the route you want to provide context to. For example, to provide `posts` to `/blog`, create a folder named `(posts)` inside `src/routes/blog`. Then, for each post, create a JavaScript file inside `(posts)` with the post name and `export default` some data:
@@ -46,6 +49,7 @@ The exported context values must be serializable via `devalue`. This means they 
 -   `Date`s
 -   `RegExp`s
 
+> [!NOTE]
 > Context _cascades_, so if you have `shop/(products)`, `shop/checkout` can access `products` via `useContext`.
 
 ### Routing Parameters
@@ -115,8 +119,61 @@ export default function load(request) {
 }
 ```
 
+> [!NOTE]
 > Like context, `load` functions cascade, so accessing `/shop/shoes` will call `load` functions from `src/routes/+load.js`, `src/routes/shop/+load.js`, and `src/routes/shop/[item]/+load.js` in that order.
 
 ### SSR
 
 While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function, or use a templating syntax to render dynamic content on the server. Additionally, we provide an `element` helper that takes a tag, props, and children to return an HTML element as a string.
+
+
+## Remote Functions
+
+Remote functions are an RPC feature (*very* much based on SvelteKit's [remote functions](https://svelte.dev/docs/kit/remote-functions)) that allow you to write functions that can be called on the client and execute on the server. This enables you to (for example) update a database from the client on the server in just a few lines of code. Here's an example.
+
+```js
+// `src/routes/db.remote.js`
+// the file exporting remote functions must end in `.remote.js`
+import { db } from 'database';
+// any validation library that follows the standard schema spec will work (e.g. zod)
+import * as v from 'valibot';
+import { command, query } from '#remote';
+
+export const create_post = command(v.object({
+        user: v.number(),
+        title: v.string(),
+        content: v.string()
+    }), async ({ user, title, content }) => {
+    await db.sql`
+        INSERT INTO posts (user, title, content)
+        VALUES (${user}, ${title}, ${content})
+    `;
+});
+
+export const get_posts = query(v.number(), user_id => {
+    const posts = await db.sql`
+        SELECT * FROM posts
+        WHERE user = ${user_id}
+    `;
+    return posts;
+});
+```
+Here, we've declared a `command` and a `query`. A query allows you to read dynamic data from the server, while a command allows you to write data to the server. Both `query` and `command` accept one or two arguments: an optional schema that validates the arguments passed to the function, and the actual function. Then, on the client:
+
+```js
+// `src/routes/+client.js`
+import { create_post, get_posts } from './db.remote.js';
+import { get_user } from './user.js';
+
+const user_id = get_user();
+get_posts(user_id).subscribe(posts => {
+    render(posts);
+});
+
+create_post_button.addEventListener('click', async () => {
+    await create_post({ user: user_id, title, content });
+});
+```
+
+> [!NOTE]
+> If you want a remote function to *not* validate its arguments, simply enter `'unchecked'` for the schema. **This is a security risk and not recommended. Remote functions are turned into public endpoints that may be called by anyone, *not* just your application.**

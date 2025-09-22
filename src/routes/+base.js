@@ -9,6 +9,7 @@ const add_event_listener = EventTarget.prototype.addEventListener;
 /** @type {string[]} */
 const url_history = [];
 let initializing = false;
+let ctrl = false;
 
 /**
  * @param {string} url
@@ -21,6 +22,10 @@ function handler(url) {
      */
     return async function handle(event) {
         event.preventDefault();
+        if (ctrl) {
+            window.open(url, '_blank');
+            return;
+        }
         await navigate(url);
     };
 }
@@ -72,13 +77,25 @@ async function prefetch(url, dependents = []) {
     const instance = new URL(url, location.href);
     instance.searchParams.append('prefetching', 'true');
     try {
-        const res = await fetch(instance.toString());
+        const res = await fetch(instance.toString(), {
+            redirect: 'follow'
+        });
+        // if the link is to a non-html file, bail out
+        if (!/text\/html/i.test(res.headers.get('content-type') ?? '')) {
+            return;
+        }
         const text = await res.text();
         const tree = parser.parseFromString(text, 'text/html');
         const { body, title, head } = tree;
         const [...scripts] = head.querySelectorAll('script');
-        cache.set(url, { body: template(body.innerHTML), title, scripts });
-        const handle = handler(url);
+        const redirected = new URL(res.url, location.href);
+        redirected.searchParams.delete('prefetching');
+        cache.set(redirected.toString(), {
+            body: template(body.innerHTML),
+            title,
+            scripts
+        });
+        const handle = handler(redirected.toString());
         for (const link of dependents) {
             // @ts-expect-error
             link.__prefetched = true;
@@ -181,6 +198,30 @@ add_event_listener.call(
     },
     { once: true }
 );
+add_event_listener.call(
+    document.body,
+    'keydown',
+    /** @type {EventListener} */ (
+        (/** @type {KeyboardEvent} */ e) => {
+            if (e.ctrlKey) {
+                ctrl = true;
+            }
+        }
+    )
+);
+
+add_event_listener.call(
+    document.body,
+    'keyup',
+    /** @type {EventListener} */ (
+        (/** @type {KeyboardEvent} */ e) => {
+            if (e.ctrlKey) {
+                ctrl = false;
+            }
+        }
+    )
+);
+
 queueMicrotask(async () => {
     await Promise.resolve();
     await init();
