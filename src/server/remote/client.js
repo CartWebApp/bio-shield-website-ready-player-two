@@ -53,7 +53,7 @@ export function query(id) {
                                 /** @type {__RemoteFunctionRequestBody} */ ({
                                     argument: stringify(arg)
                                 });
-                            const res = await fetch(`/:${id}`, {
+                            const res = await fetch(`/%${id}`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'text/plain',
@@ -186,7 +186,7 @@ export function command(id) {
                                                   argument: stringify(arg)
                                               }))
                                 });
-                            const res = await fetch(`/:${id}`, {
+                            const res = await fetch(`/%${id}`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'text/plain',

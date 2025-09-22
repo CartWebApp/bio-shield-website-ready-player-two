@@ -6,7 +6,7 @@
 /** @import { __RemoteFunctionResponseBody, RemoteQuery, RemoteCommand, __RemoteFunctionRequestBody, RemoteQueryFunction, MaybePromise } from '../types.js' */
 /** @import { Request, Response } from 'express' */
 /** @import { StandardSchemaV1 } from '@standard-schema/spec' */
-import { remote_endpoints, remote_functions } from '../index.js';
+import app, { remote_endpoints, remote_functions } from '../index.js';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { parse, stringify } from 'devalue';
 import { join } from 'path';
@@ -113,6 +113,7 @@ export function query(validate_or_fn, maybe_fn) {
             res.json(response);
         }
     }
+    app.post(`/%${id}`, handle);
     remote_endpoints.set(`/:${id}`, handle);
     console.log([...remote_endpoints.keys()]);
     const res = /** @type {RemoteQueryFunction<T>} */ (
@@ -314,7 +315,8 @@ export function command(validate_or_fn, maybe_fn) {
         }
         pending_refreshers = null;
     }
-    remote_endpoints.set(`/:${id}`, handle);
+    // remote_endpoints.set(`/:${id}`, handle);
+    app.post(`/%${id}`, handle);
     const res = /** @type {RemoteCommand<Input, Output>} */ (
         Object.assign(
             /** @type {RemoteCommand<Input, Output>} */ (

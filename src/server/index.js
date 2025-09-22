@@ -371,6 +371,11 @@ function is_error_object(err) {
     return true;
 }
 
+for (const path of readdirSync(join(process.cwd(), 'src', 'routes'), { withFileTypes: true, recursive: true })) {
+    if (!path.isFile() || !/\.remote\.js$/.test(path.name)) continue;
+    import(`file:${sep}${sep}${join(path.parentPath, path.name)}`);
+}
+
 /**
  * @param {string} path
  */
@@ -378,19 +383,19 @@ async function transform_remote_module(path) {
     const res = ["import { query, command } from '#remote';"];
     let i = 0;
     const module = await import(`file:${sep}${sep}${path}`);
-    if (
-        !existsSync(
-            existsSync('/tmp')
-                ? `/tmp/entries`
-                : join(process.cwd(), 'src', 'server', 'remote', 'entries')
-        )
-    ) {
-        mkdirSync(
-            existsSync('/tmp')
-                ? `/tmp/entries`
-                : join(process.cwd(), 'src', 'server', 'remote', 'entries')
-        );
-    }
+    // if (
+    //     !existsSync(
+    //         existsSync('/tmp')
+    //             ? `/tmp/entries`
+    //             : join(process.cwd(), 'src', 'server', 'remote', 'entries')
+    //     )
+    // ) {
+    //     mkdirSync(
+    //         existsSync('/tmp')
+    //             ? `/tmp/entries`
+    //             : join(process.cwd(), 'src', 'server', 'remote', 'entries')
+    //     );
+    // }
     for (const [key, value] of Object.entries(module)) {
         if (
             typeof value === 'function' &&
@@ -413,22 +418,22 @@ async function transform_remote_module(path) {
                         : `'${key.replace(/(\\|')/g, m => `\\${m}`)}'`
                 } };`
             );
-            writeFileSync(
-                existsSync('/tmp')
-                    ? `/tmp/entries/${__remote.id}.mjs`
-                    : join(
-                          process.cwd(),
-                          'src',
-                          'server',
-                          'remote',
-                          'entries',
-                          `${__remote.id}.mjs`
-                      ),
-                `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(
-                    /\\/g,
-                    '\\\\'
-                )}'`
-            );
+            // writeFileSync(
+            //     existsSync('/tmp')
+            //         ? `/tmp/entries/${__remote.id}.mjs`
+            //         : join(
+            //               process.cwd(),
+            //               'src',
+            //               'server',
+            //               'remote',
+            //               'entries',
+            //               `${__remote.id}.mjs`
+            //           ),
+            //     `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(
+            //         /\\/g,
+            //         '\\\\'
+            //     )}'`
+            // );
         }
     }
     return res.join('\n');
@@ -467,16 +472,20 @@ app.use(async (req, res, next) => {
     }
     console.log(req.method);
     console.log(req.headers['remote_query']);
-    if (
-        req.path.match(/^\/\:[0-9]+$/) &&
-        req.headers['remote_query'] === 'true' &&
-        req.method === 'POST'
-    ) {
-        await (
-            await load_remote_function(Number(req.path.slice(2)))
-        )(req, res);
+    if (req.path.match(/^\/\%/) && req.method === 'POST') {
+        next();
         return;
     }
+    // if (
+    //     req.path.match(/^\/\:[0-9]+$/) &&
+    //     req.headers['remote_query'] === 'true' &&
+    //     req.method === 'POST'
+    // ) {
+    //     await (
+    //         await load_remote_function(Number(req.path.slice(2)))
+    //     )(req, res);
+    //     return;
+    // }
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
      */
