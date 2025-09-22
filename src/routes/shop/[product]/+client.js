@@ -1,5 +1,4 @@
 /// <reference path="./types.d.ts" />
-console.log(import.meta.url);
 import { add_views } from '../views.remote.js';
 const { product } = useParams();
 // since most of the content is rendered on the server (in `+load.js`), we just need
