@@ -96,6 +96,7 @@ export function query(validate_or_fn, maybe_fn) {
         }
     }
     remote_endpoints.set(`/:${id}`, handle);
+    console.log([...remote_endpoints.keys()]);
     return /** @type {RemoteQueryFunction<T>} */ (
         Object.assign(
             /** @type {RemoteQueryFunction<T>} */ (
