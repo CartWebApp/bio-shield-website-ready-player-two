@@ -411,6 +411,7 @@ app.use(async (req, res, next) => {
         );
         return;
     }
+    console.log([...remote_endpoints.keys()]);
     const remote = remote_endpoints.get(req.path);
     console.log(remote);
     console.log(req.method);
