@@ -412,6 +412,9 @@ app.use(async (req, res, next) => {
         return;
     }
     const remote = remote_endpoints.get(req.path);
+    console.log(remote);
+    console.log(req.method);
+    console.log(req.headers['remote_query']);
     if (
         typeof remote === 'function' &&
         req.headers['remote_query'] === 'true' &&
