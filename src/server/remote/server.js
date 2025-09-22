@@ -7,9 +7,12 @@
 /** @import { Request, Response } from 'express' */
 /** @import { StandardSchemaV1 } from '@standard-schema/spec' */
 import { remote_endpoints, remote_functions } from '../index.js';
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { parse, stringify } from 'devalue';
 import { join } from 'path';
+if (existsSync('/tmp')) {
+    console.log('tmp exists!');
+}
 let remote_id = JSON.parse(readFileSync(join(process.cwd(), 'src', 'server', 'remote', 'remote.json'), 'utf-8'));
 /** @type {Array<{ promise: Promise<void>; id: number; argument: any; resolved: boolean; error: string; result: string; success: boolean }> | null} */
 let pending_refreshers = null;
