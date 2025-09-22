@@ -18,7 +18,6 @@ import { parse, sep, join } from 'path';
 import kleur from 'kleur';
 import { STATUS_CODES } from 'http';
 import { minify } from 'terser';
-import body_parser from 'body-parser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
 /** @typedef {{ body: InsertionManager<'body'>; title: string; head: InsertionManager<'head'> }} Body */
@@ -403,7 +402,7 @@ async function transform_remote_module(path) {
     return res.join('\n');
 }
 
-app.use(body_parser.text());
+app.use(express.text());
 app.use(async (req, res, next) => {
     if (req.path === '/:remote') {
         res.contentType('.js');

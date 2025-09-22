@@ -20,9 +20,6 @@ importers:
       '@standard-schema/utils':
         specifier: ^0.3.0
         version: 0.3.0
-      body-parser:
-        specifier: ^2.2.0
-        version: 2.2.0
       devalue:
         specifier: ^5.3.2
         version: 5.3.2
@@ -48,9 +45,6 @@ importers:
         specifier: ^48.1.0
         version: 48.1.0(rollup@4.52.0)
     devDependencies:
-      '@types/body-parser':
-        specifier: ^1.19.6
-        version: 1.19.6
       '@types/express':
         specifier: ^5.0.3
         version: 5.0.3

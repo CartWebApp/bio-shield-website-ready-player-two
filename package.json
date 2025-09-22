@@ -32,7 +32,6 @@
         "@rollup/plugin-terser": "^0.4.4",
         "@standard-schema/spec": "^1.0.0",
         "@standard-schema/utils": "^0.3.0",
-        "body-parser": "^2.2.0",
         "devalue": "^5.3.2",
         "esm-env": "^1.2.2",
         "express": "^5.1.0",
@@ -43,7 +42,6 @@
         "vercel": "^48.1.0"
     },
     "devDependencies": {
-        "@types/body-parser": "^1.19.6",
         "@types/express": "^5.0.3",
         "@types/node": "^24.5.2",
         "chokidar": "^4.0.3"
