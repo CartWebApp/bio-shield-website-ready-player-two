@@ -402,7 +402,7 @@ async function transform_remote_module(path) {
     return res.join('\n');
 }
 
-app.use(express.text());
+// app.use(express.text());
 app.use(async (req, res, next) => {
     if (req.path === '/:remote') {
         res.contentType('.js');
