@@ -25,10 +25,6 @@ const app = express();
 /** @typedef {{ request: __Request<Record<string, string>>; context: Record<string, Record<string, any>> } & Body} Route */
 /** @type {Route | null} */
 export let active_route = null;
-/** @type {Map<string, (req: Request, res: Response) => Promise<void>>} */
-export const remote_endpoints = new Map();
-/** @type {Map<object, (req: Request, res: Response) => Promise<void>>} */
-export const remote_functions = new Map();
 
 if (chokidar) {
     // In dev, this *should* reload the page when the corresponding HTML changes
@@ -383,19 +379,6 @@ async function transform_remote_module(path) {
     const res = ["import { query, command } from '#remote';"];
     let i = 0;
     const module = await import(`file:${sep}${sep}${path}`);
-    // if (
-    //     !existsSync(
-    //         existsSync('/tmp')
-    //             ? `/tmp/entries`
-    //             : join(process.cwd(), 'src', 'server', 'remote', 'entries')
-    //     )
-    // ) {
-    //     mkdirSync(
-    //         existsSync('/tmp')
-    //             ? `/tmp/entries`
-    //             : join(process.cwd(), 'src', 'server', 'remote', 'entries')
-    //     );
-    // }
     for (const [key, value] of Object.entries(module)) {
         if (
             typeof value === 'function' &&
@@ -418,47 +401,9 @@ async function transform_remote_module(path) {
                         : `'${key.replace(/(\\|')/g, m => `\\${m}`)}'`
                 } };`
             );
-            // writeFileSync(
-            //     existsSync('/tmp')
-            //         ? `/tmp/entries/${__remote.id}.mjs`
-            //         : join(
-            //               process.cwd(),
-            //               'src',
-            //               'server',
-            //               'remote',
-            //               'entries',
-            //               `${__remote.id}.mjs`
-            //           ),
-            //     `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(
-            //         /\\/g,
-            //         '\\\\'
-            //     )}'`
-            // );
         }
     }
     return res.join('\n');
-}
-
-/**
- * @param {number} entry_id
- */
-async function load_remote_function(entry_id) {
-    const { default: remote } = await import(
-        `file:${sep}${sep}${
-            existsSync('/tmp')
-                ? `/tmp/entries/${entry_id}.mjs`
-                : join(
-                      process.cwd(),
-                      'src',
-                      'server',
-                      'remote',
-                      'entries',
-                      `${entry_id}.mjs`
-                  )
-        }`
-    );
-    const handler = remote_functions.get(remote);
-    return /** @type {NonNullable<typeof handler>} */ (handler);
 }
 
 app.use(express.text());
@@ -470,22 +415,10 @@ app.use(async (req, res, next) => {
         );
         return;
     }
-    console.log(req.method);
-    console.log(req.headers['remote_query']);
-    if (req.path.match(/^\/=/) && req.method === 'POST') {
+    if (req.path === '/' && req.headers['remote_function'] && req.method === 'POST') {
         next();
         return;
     }
-    // if (
-    //     req.path.match(/^\/\:[0-9]+$/) &&
-    //     req.headers['remote_query'] === 'true' &&
-    //     req.method === 'POST'
-    // ) {
-    //     await (
-    //         await load_remote_function(Number(req.path.slice(2)))
-    //     )(req, res);
-    //     return;
-    // }
     /**
      * @param {{ err?: { message: string; status: number; }; params?: Record<string, string> }} [data]
      */

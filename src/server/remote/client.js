@@ -54,11 +54,11 @@ export function query(id) {
                                 /** @type {__RemoteFunctionRequestBody} */ ({
                                     argument: stringify(arg)
                                 });
-                            const res = await fetch(`/=${id}`, {
+                            const res = await fetch('/', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'text/plain',
-                                    'remote_query': 'true'
+                                    remote_function: id.toString()
                                 },
                                 body: JSON.stringify(body)
                             });
@@ -187,11 +187,11 @@ export function command(id) {
                                                   argument: stringify(arg)
                                               }))
                                 });
-                            const res = await fetch(`/=${id}`, {
+                            const res = await fetch('/', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'text/plain',
-                                    'remote_query': 'true'
+                                    remote_function: id.toString()
                                 },
                                 body: JSON.stringify(body)
                             });

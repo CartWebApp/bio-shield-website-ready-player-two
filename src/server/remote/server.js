@@ -6,23 +6,9 @@
 /** @import { __RemoteFunctionResponseBody, RemoteQuery, RemoteCommand, __RemoteFunctionRequestBody, RemoteQueryFunction, MaybePromise } from '../types.js' */
 /** @import { Request, Response } from 'express' */
 /** @import { StandardSchemaV1 } from '@standard-schema/spec' */
-import app, { remote_endpoints, remote_functions } from '../index.js';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
+import app from '../index.js';
 import { parse, stringify } from 'devalue';
-import { join } from 'path';
-// let remote_json = existsSync('/tmp')
-//     ? '/tmp/remote.json'
-//     : join(process.cwd(), 'src', 'server', 'remote', 'remote.json');
-// if (existsSync('/tmp')) {
-//     console.log('tmp exists!');
-//     writeFileSync('/tmp/remote.json', '0');
-// }
-// let remote_id = JSON.parse(
-//     readFileSync(
-//         remote_json,
-//         'utf-8'
-//     )
-// );
+
 let remote_id = 0;
 /** @type {Array<{ promise: Promise<void>; id: number; argument: any; resolved: boolean; error: string; result: string; success: boolean }> | null} */
 let pending_refreshers = null;
@@ -72,11 +58,7 @@ export function query(validate_or_fn, maybe_fn) {
             ? maybe_fn
             : /** @type {T} */ (validate_or_fn);
     const id = remote_id++;
-    // writeFileSync(
-    //     remote_json,
-    //     id.toString()
-    // );
-    console.log(id);
+
     /**
      * @param {Request} req
      * @param {Response} res
@@ -114,10 +96,17 @@ export function query(validate_or_fn, maybe_fn) {
             res.json(response);
         }
     }
-    app.post(`/=${id}`, handle);
-    remote_endpoints.set(`/:${id}`, handle);
-    console.log([...remote_endpoints.keys()]);
-    const res = /** @type {RemoteQueryFunction<T>} */ (
+    app.use('/', async (req, res, next) => {
+        if (
+            req.method !== 'POST' ||
+            Number(req.headers['remote_function']) !== id
+        ) {
+            next();
+            return;
+        }
+        await handle(req, res);
+    });
+    return /** @type {RemoteQueryFunction<T>} */ (
         Object.assign(
             /** @type {RemoteQueryFunction<T>} */ (
                 arg => {
@@ -204,8 +193,6 @@ export function query(validate_or_fn, maybe_fn) {
             { __remote: { id, type: 'query' } }
         )
     );
-    remote_functions.set(res, handle);
-    return res;
 }
 
 // these types were modified
@@ -316,9 +303,17 @@ export function command(validate_or_fn, maybe_fn) {
         }
         pending_refreshers = null;
     }
-    // remote_endpoints.set(`/:${id}`, handle);
-    app.post(`/=${id}`, handle);
-    const res = /** @type {RemoteCommand<Input, Output>} */ (
+    app.use('/', async (req, res, next) => {
+        if (
+            req.method !== 'POST' ||
+            Number(req.headers['remote_function']) !== id
+        ) {
+            next();
+            return;
+        }
+        await handle(req, res);
+    });
+    return /** @type {RemoteCommand<Input, Output>} */ (
         Object.assign(
             /** @type {RemoteCommand<Input, Output>} */ (
                 arg => {
@@ -353,6 +348,4 @@ export function command(validate_or_fn, maybe_fn) {
             { __remote: { id, type: 'command' } }
         )
     );
-    remote_functions.set(res, handle);
-    return res;
 }
