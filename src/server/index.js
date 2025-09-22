@@ -412,27 +412,6 @@ app.use(async (req, res, next) => {
         return;
     }
     const remote = remote_endpoints.get(req.path);
-    if (req.method === 'POST' && !isNaN(Number(req.headers['content-length']))) {
-        await new Promise(resolve => {
-            let body = '';
-            if (req.readable) {
-                resolve(console.log(req.read()));
-            } else {
-                req.on('readable', () => {
-                    console.log(req.read());
-                    resolve(null);
-                })
-                req.on('data', (chunk) => {
-                    body += chunk;
-                    console.log(chunk);
-                });
-                req.on('end', () => {
-                    console.log(body);
-                    resolve(null);
-                });
-            }
-        });
-    }
     console.log(remote);
     console.log(req.method);
     console.log(req.headers['remote_query']);
