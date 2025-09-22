@@ -415,14 +415,14 @@ async function transform_remote_module(path) {
             );
             writeFileSync(
                 existsSync('/tmp')
-                    ? `/tmp/entries/${__remote.id}.js`
+                    ? `/tmp/entries/${__remote.id}.mjs`
                     : join(
                           process.cwd(),
                           'src',
                           'server',
                           'remote',
                           'entries',
-                          `${__remote.id}.js`
+                          `${__remote.id}.mjs`
                       ),
                 `export { ${key} as default } from '${`file:${sep}${sep}${path}`.replace(
                     /\\/g,
@@ -441,14 +441,14 @@ async function load_remote_function(entry_id) {
     const { default: remote } = await import(
         `file:${sep}${sep}${
             existsSync('/tmp')
-                ? `/tmp/entries/${entry_id}.js`
+                ? `/tmp/entries/${entry_id}.mjs`
                 : join(
                       process.cwd(),
                       'src',
                       'server',
                       'remote',
                       'entries',
-                      `${entry_id}.js`
+                      `${entry_id}.mjs`
                   )
         }`
     );
