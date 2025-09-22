@@ -415,10 +415,12 @@ app.use(async (req, res, next) => {
     if (req.method === 'POST' && !isNaN(Number(req.headers['content-length']))) {
         await new Promise(resolve => {
             let body = '';
-            const read = req.read();
-            if (read) {
-                resolve(console.log(read));
+            if (req.readable) {
+                resolve(console.log(req.read()));
             } else {
+                req.on('readable', () => {
+                    console.log(req.readable)
+                })
                 req.on('data', (chunk) => {
                     body += chunk;
                 });
