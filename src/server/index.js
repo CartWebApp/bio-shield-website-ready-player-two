@@ -367,7 +367,12 @@ function is_error_object(err) {
     return true;
 }
 
-for (const path of readdirSync(join(process.cwd(), 'src', 'routes'), { withFileTypes: true, recursive: true })) {
+// iiuc vercel functions _don't_ reuse the same process upon rerunning
+// so we have to import every `.remote.js` function upon initialization
+for (const path of readdirSync(join(process.cwd(), 'src', 'routes'), {
+    withFileTypes: true,
+    recursive: true
+})) {
     if (!path.isFile() || !/\.remote\.js$/.test(path.name)) continue;
     import(`file:${sep}${sep}${join(path.parentPath, path.name)}`);
 }
@@ -415,7 +420,11 @@ app.use(async (req, res, next) => {
         );
         return;
     }
-    if (req.path === '/' && req.headers['remote_function'] && req.method === 'POST') {
+    if (
+        req.path === '/' &&
+        req.headers['remote_function'] &&
+        req.method === 'POST'
+    ) {
         next();
         return;
     }
