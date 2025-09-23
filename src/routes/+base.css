@@ -125,13 +125,17 @@ nav span a:not(:has(img)) {
 
 .island {
     padding: 1em 0.8em 2em 1.8em;
-    background-color: #111;
     text-align: left;
-    animation: pulsate 2s infinite;
     max-width: 50vw;
     margin: 0 auto;
     clip-path: inset(-25vw, 0, -25vw, 0);
     border-radius: 0.5em;
+    backdrop-filter: blur(30px);
+    background-color: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-top: 7rem;
+    margin-bottom: 7rem;
     & > p {
         min-width: 49vw;
     }
@@ -151,7 +155,7 @@ nav span a:not(:has(img)) {
             display: inline;
             margin: 2em 0 2em 2em;
             padding: 0.5em;
-            background: #1f1f1f;
+            background: #1f1f1f90;
             color: white;
             border: 0px;
             border-radius: 0.2rem;
@@ -162,7 +166,7 @@ nav span a:not(:has(img)) {
             transition: background 0.3s ease;
             cursor: pointer;
             &:is(:hover, :active, :open) {
-                background: #2f2f2f;
+                background: #2f2f2f90;
             }
         }
         & .sort_by {
@@ -184,7 +188,7 @@ nav span a:not(:has(img)) {
             border: 0.05em solid #222;
             box-shadow: 0px 0px 2px 0px #999;
             transition: box-shadow 0.3s ease;
-            background: #151515;
+            background: #15151590;
             padding: 1em;
             margin: 1em;
             width: 10em;
@@ -210,37 +214,6 @@ nav span a:not(:has(img)) {
     }
 }
 
-@keyframes pulsate {
-    0%,
-    100% {
-        box-shadow: var(--base-dark) 0em 0em 6em 0em;
-    }
-    10% {
-        box-shadow: var(--base-dark) 0em 0em 5.5em 0em;
-    }
-    20% {
-        box-shadow: var(--base-dark) 0em 0em 5em 0em;
-    }
-    30% {
-        box-shadow: var(--base-dark) 0em 0em 4.5em 0em;
-    }
-    40% {
-        box-shadow: var(--base-dark) 0em 0em 4em 0em;
-    }
-    50% {
-        box-shadow: var(--base-dark) 0em 0em 4.5em 0em;
-    }
-    60% {
-        box-shadow: var(--base-dark) 0em 0em 5em 0em;
-    }
-    80% {
-        box-shadow: var(--base-dark) 0em 0em 5.5em 0em;
-    }
-    90% {
-        box-shadow: var(--base-dark) 0em 0em 6em 0em;
-    }
-}
-
 .mission h2 {
     font-size: 2em;
     margin-bottom: 1em;
@@ -254,12 +227,11 @@ nav span a:not(:has(img)) {
 }
 
 .about {
-    margin-top: 7rem;
     word-spacing: 0.1em;
     line-height: 1.5em;
     font-size: 1.3em;
     text-align: left;
-    min-width: 75vw;
+    min-width: 85vw;
     & p {
         margin-top: 1em;
     }
@@ -270,6 +242,10 @@ nav span a:not(:has(img)) {
     justify-content: space-between;
 }
 
+.green {
+    color: var(--base-dark);
+}
+
 button {
     border-radius: 0.2em;
     padding: 0.2em 0.5em;
@@ -278,15 +254,15 @@ button {
         'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
         'Helvetica Neue', sans-serif;
     color: white;
-    background-color: #222;
+    background-color: #222b;
     border: none;
     cursor: pointer;
     transition: background-color 0.3s ease;
     &:is(:focus, :active, :hover) {
-        background-color: #444;
+        background-color: #444b;
     }
     &:disabled {
-        background-color: #555;
+        background-color: #555b;
         color: #ccc;
         cursor: not-allowed;
     }
@@ -298,10 +274,10 @@ label {
 
 input,
 textarea {
-    background-color: #222;
+    background-color: #2229;
     color: white;
     border-radius: 0.2em;
-    border: 1px #222 solid;
+    border: 1px #2229 solid;
     outline: none;
     padding: 0.5em;
     transition: border-color 0.3s ease;

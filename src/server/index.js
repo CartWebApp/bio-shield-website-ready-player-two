@@ -9,8 +9,7 @@ import {
     existsSync,
     statSync,
     readdirSync,
-    writeFileSync,
-    mkdirSync
+    writeFileSync
 } from 'fs';
 import { DEV } from 'esm-env';
 import express from 'express';
@@ -18,7 +17,6 @@ import { uneval, parse as deserialize, stringify } from 'devalue';
 import { parse, sep, join } from 'path';
 import kleur from 'kleur';
 import { STATUS_CODES } from 'http';
-import { minify } from 'terser';
 const chokidar = DEV && (await import('chokidar'));
 const app = express();
 /** @typedef {{ body: InsertionManager<'body'>; title: string; head: InsertionManager<'head'> }} Body */
@@ -36,7 +34,7 @@ if (chokidar) {
         const _path = decodeURIComponent(
             /** @type {string} */ (req.query.path)
         );
-        const path = join(process.cwd(), 'src', 'routes', ..._path.split('/'));
+        const path = join(process.cwd(), 'src', 'build', ..._path.split('/'));
 
         if (!watchers.has(path)) {
             watchers.set(path, []);
@@ -123,7 +121,7 @@ function params(path) {
 }
 
 function generate_all_types() {
-    for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
+    for (const file of readdirSync(join(process.cwd(), 'src', 'build'), {
         recursive: true
     })) {
         if (typeof file !== 'string' || parse(file).base !== 'index.html')
@@ -135,7 +133,7 @@ function generate_all_types() {
             const dir = join(
                 process.cwd(),
                 'src',
-                'routes',
+                'build',
                 ...file.split(sep).slice(0, -1)
             );
             const types = generate_types(dir);
@@ -369,7 +367,7 @@ function is_error_object(err) {
 
 // iiuc vercel functions _don't_ reuse the same process upon rerunning
 // so we have to import every `.remote.js` function upon initialization
-for (const path of readdirSync(join(process.cwd(), 'src', 'routes'), {
+for (const path of readdirSync(join(process.cwd(), 'src', 'build'), {
     withFileTypes: true,
     recursive: true
 })) {
@@ -463,7 +461,7 @@ app.use(async (req, res, next) => {
     const path = join(
         process.cwd(),
         'src',
-        'routes',
+        'build',
         ...req.path.split('/').slice(1)
     );
     const prefetching = typeof req.query.prefetching === 'string';
@@ -797,23 +795,15 @@ export function escape(data) {
     );
 }
 
-const base = existsSync(join(process.cwd(), 'src', 'routes', '+base.html'))
-    ? readFileSync(join(process.cwd(), 'src', 'routes', '+base.html'), 'utf-8')
+const base = existsSync(join(process.cwd(), 'src', 'build', '+base.html'))
+    ? readFileSync(join(process.cwd(), 'src', 'build', '+base.html'), 'utf-8')
     : '';
-const css = existsSync(join(process.cwd(), 'src', 'routes', '+base.css'))
-    ? readFileSync(join(process.cwd(), 'src', 'routes', '+base.css'), 'utf-8')
+const css = existsSync(join(process.cwd(), 'src', 'build', '+base.css'))
+    ? readFileSync(join(process.cwd(), 'src', 'build', '+base.css'), 'utf-8')
     : '';
 
-const main_script = existsSync(join(process.cwd(), 'src', 'routes', '+base.js'))
-    ? (
-          await minify(
-              readFileSync(
-                  join(process.cwd(), 'src', 'routes', '+base.js'),
-                  'utf-8'
-              ),
-              { module: true }
-          )
-      ).code
+const main_script = existsSync(join(process.cwd(), 'src', 'build', '+base.js'))
+    ? readFileSync(join(process.cwd(), 'src', 'build', '+base.js'), 'utf-8')
     : '';
 
 /**
@@ -883,17 +873,13 @@ async function transform(
     const body = await build_body(lines.join('\n\t\t'), route.body);
     active_route = null;
     const script = existsSync(join(dir, '+client.js'))
-        ? (
-              await minify(readFileSync(join(dir, '+client.js'), 'utf-8'), {
-                  module: true
-              })
-          ).code
+        ? readFileSync(join(dir, '+client.js'), 'utf-8')
         : '';
     const head =
         route.head.prepend.join('') +
-        (existsSync(join(process.cwd(), 'src', 'routes', '+head.html'))
+        (existsSync(join(process.cwd(), 'src', 'build', '+head.html'))
             ? readFileSync(
-                  join(process.cwd(), 'src', 'routes', '+head.html'),
+                  join(process.cwd(), 'src', 'build', '+head.html'),
                   'utf-8'
               )
             : '') +

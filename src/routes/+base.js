@@ -9,7 +9,6 @@ const add_event_listener = EventTarget.prototype.addEventListener;
 /** @type {string[]} */
 const url_history = [];
 let initializing = false;
-let ctrl = false;
 
 /**
  * @param {string} url
@@ -17,12 +16,12 @@ let ctrl = false;
 function handler(url) {
     /**
      * @this {HTMLAnchorElement | HTMLAreaElement}
-     * @param {Event} event
+     * @param {MouseEvent} event
      * @returns {Promise<void>}
      */
     return async function handle(event) {
         event.preventDefault();
-        if (ctrl) {
+        if (event.ctrlKey) {
             window.open(url, '_blank');
             return;
         }
@@ -99,7 +98,11 @@ async function prefetch(url, dependents = []) {
         for (const link of dependents) {
             // @ts-expect-error
             link.__prefetched = true;
-            add_event_listener.call(link, 'click', handle);
+            add_event_listener.call(
+                link,
+                'click',
+                /** @type {EventListener} */ (/** @type {unknown} */ (handle))
+            );
         }
     } catch {}
 }
@@ -198,35 +201,11 @@ add_event_listener.call(
     },
     { once: true }
 );
-add_event_listener.call(
-    document.body,
-    'keydown',
-    /** @type {EventListener} */ (
-        (/** @type {KeyboardEvent} */ e) => {
-            if (e.ctrlKey) {
-                ctrl = true;
-            }
-        }
-    )
-);
-
-add_event_listener.call(
-    document.body,
-    'keyup',
-    /** @type {EventListener} */ (
-        (/** @type {KeyboardEvent} */ e) => {
-            if (e.ctrlKey) {
-                ctrl = false;
-            }
-        }
-    )
-);
 
 queueMicrotask(async () => {
     await Promise.resolve();
     await init();
 });
-export {};
 
 /**
  * @param {string} src

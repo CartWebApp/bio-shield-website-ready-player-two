@@ -14,15 +14,42 @@ export default function load(request) {
     const { name, images, price } = product;
     insert.title(`${name} - Bio-Shield Shop`);
     insert.body.replace(body => {
-        const carousel = images
-            .map(image =>
-                element(
-                    'div',
-                    { class: 'img_wrapper' },
-                    element('img', { src: image, alt: name })
-                )
+        const carousel = images.map(image =>
+            element(
+                'div',
+                { class: 'img_wrapper' },
+                element('img', { src: image, alt: name })
             )
-            .join('\n');
+        );
+        const related = Object.entries(products)
+            .filter(([_key]) => _key !== key)
+            .map(([endpoint, { images, name, price }]) =>
+                element(
+                    'a',
+                    {
+                        href: `/shop/${endpoint}/`
+                    },
+                    element(
+                        'div',
+                        {
+                            class: 'product'
+                        },
+                        element('img', {
+                            src: images[0],
+                            alt: name
+                        }),
+                        element('br'),
+                        escape(name),
+                        element(
+                            'span',
+                            {
+                                class: 'price'
+                            },
+                            price
+                        )
+                    )
+                )
+            );
         return body
             .replace('[[name]]', escape(name))
             .replace('[[price]]', price.toString())
@@ -34,7 +61,9 @@ export default function load(request) {
                     element('img', { src: images[0], alt: name })
                 )
             )
-            .replace('[[carousel]]', carousel);
+            .replace('[[description]]', escape(product.description))
+            .replace('[[carousel]]', carousel.join('\n'))
+            .replace('[[related]]', related.join('\n'));
     });
     insert.head.append(
         element('link', {

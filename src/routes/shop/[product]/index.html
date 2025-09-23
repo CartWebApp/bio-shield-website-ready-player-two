@@ -1,7 +1,4 @@
 Bio-Shield
-<br />
-<br />
-<br />
 <div class="island">
     <h1>[[name]]</h1>
     <br />
@@ -12,13 +9,20 @@ Bio-Shield
         </section>
         <section class="info">
             <h2 class="price">[[price]]</h2>
+            <br />
+            <p class="description">[[description]]</p>
         </section>
     </article>
+    <br /><br />
+    <h2 class="related_header">Related Products</h2>
+    <br />
+    <section class="related">[[related]]</section>
 </div>
 <style>
     .images {
         display: flex;
         min-width: 25vw;
+        margin-top: 5vh;
         & > .carousel {
             display: grid;
             scroll-snap-type: y mandatory;
@@ -48,7 +52,7 @@ Bio-Shield
                 border-radius: 0.2rem;
                 cursor: pointer;
                 &:hover {
-                    background: #222;
+                    background: #2229;
                 }
             }
             & img {
@@ -60,7 +64,7 @@ Bio-Shield
             }
         }
         & > div {
-            background: #222;
+            background: #2229;
             height: 40vh;
             min-width: 21vw;
             margin: auto;
@@ -77,12 +81,11 @@ Bio-Shield
     }
     .info {
         text-align: left;
-        min-width: 30vw;
-        transform: translateY(-4em);
-    }
-    .island {
-        min-width: 65vw;
-        padding: 2em 4em 4em 4em;
+        max-width: 25vw;
+        min-height: 18vh;
+        transform: translateY(-1em);
+        /* margin-left: 5vw; */
+        margin-right: 8vw;
         & h2 {
             font-family: 'DM Serif Display';
             font-size: 4em;
@@ -90,5 +93,54 @@ Bio-Shield
                 content: '$';
             }
         }
+        & p {
+            transform: translateY(-2em);
+        }
+    }
+    .island {
+        min-width: 65vw;
+        padding: 2em 4em 4em 4em;
+    }
+
+    .related {
+        justify-content: center;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, 12em);
+        grid-template-rows: repeat(auto-fit);
+        gap: 2em;
+        font-family: 'DM Serif Display';
+
+        & .product {
+            border-radius: 0.2em;
+            border: 0.05em solid #222;
+            box-shadow: 0px 0px 2px 0px #999;
+            transition: box-shadow 0.3s ease;
+            background: #15151590;
+            padding: 1em;
+            margin: 1em;
+            width: 10em;
+            height: 12em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            &:hover {
+                box-shadow: 0px 0px 4px 0px #999;
+            }
+            & .price::before {
+                content: '$';
+            }
+        }
+        & a {
+            text-decoration: none;
+            color: white;
+        }
+        & img {
+            height: 8em;
+            object-fit: contain;
+        }
+    }
+    .related_header {
+        margin-left: 12vw;
+        margin-bottom: 0;
     }
 </style>
