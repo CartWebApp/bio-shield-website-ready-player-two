@@ -59,7 +59,6 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
             filename: join(file.parentPath, file.name),
             minify: true
         });
-        console.log(path, existsSync(path));
         writeFileSync(join(path, file.name), minified.code);
     }
 }

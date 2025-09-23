@@ -9,8 +9,7 @@ import {
     existsSync,
     statSync,
     readdirSync,
-    writeFileSync,
-    mkdirSync
+    writeFileSync
 } from 'fs';
 import { DEV } from 'esm-env';
 import express from 'express';
