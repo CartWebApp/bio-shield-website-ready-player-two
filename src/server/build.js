@@ -22,48 +22,25 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
     if (!file.isFile()) {
         continue;
     }
-    if (
-        !existsSync(
-            join(
-                file.parentPath
-                    .replaceAll('/', sep)
-                    .replace(
-                        join(process.cwd(), 'src', 'routes'),
-                        join(process.cwd(), 'src', 'build')
-                    )
+    const path = join(
+        file.parentPath
+            .replaceAll('/', sep)
+            .replace(
+                join(process.cwd(), 'src', 'routes'),
+                join(process.cwd(), 'src', 'build')
             )
-        )
-    ) {
-        mkdirSync(
-            join(
-                file.parentPath
-                    .replaceAll('/', sep)
-                    .replace(
-                        join(process.cwd(), 'src', 'routes'),
-                        join(process.cwd(), 'src', 'build')
-                    )
-            ),
-            { recursive: true }
-        );
+    );
+    if (!existsSync(path)) {
+        mkdirSync(path, { recursive: true });
     }
     const parsed = parse(file.name);
     if (
         (parsed.ext !== '.js' || file.name.endsWith('.remote.js')) &&
         parsed.ext !== '.css'
     ) {
-        cpSync(
-            join(file.parentPath, file.name),
-
-            join(
-                ...`${file.parentPath
-                    .replaceAll('/', sep)
-                    .replace(
-                        join(process.cwd(), 'src', 'routes'),
-                        join(process.cwd(), 'src', 'build')
-                    )}${sep}${file.name}`.split('/')
-            ),
-            { recursive: true }
-        );
+        cpSync(join(file.parentPath, file.name), join(path, file.name), {
+            recursive: true
+        });
         continue;
     }
     if (parsed.ext === '.js') {
@@ -74,17 +51,7 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
         const minified = await minify(contents, {
             module: true
         });
-        writeFileSync(
-            join(
-                ...`${file.parentPath
-                    .replaceAll('/', sep)
-                    .replace(
-                        join(process.cwd(), 'src', 'routes'),
-                        join(process.cwd(), 'src', 'build')
-                    )}${sep}${file.name}`.split('/')
-            ),
-            minified.code ?? ''
-        );
+        writeFileSync(join(path, file.name), minified.code ?? '');
     } else {
         const contents = readFileSync(join(file.parentPath, file.name));
         const minified = transform({
@@ -92,39 +59,7 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
             filename: join(file.parentPath, file.name),
             minify: true
         });
-        console.log(
-            join(
-                ...`${file.parentPath
-                    .replaceAll('/', sep)
-                    .replace(
-                        join(process.cwd(), 'src', 'routes'),
-                        join(process.cwd(), 'src', 'build')
-                    )}${sep}${file.name}`.split('/')
-            ),
-            existsSync(
-                parse(
-                    join(
-                        ...`${file.parentPath
-                            .replaceAll('/', sep)
-                            .replace(
-                                join(process.cwd(), 'src', 'routes'),
-                                join(process.cwd(), 'src', 'build')
-                            )}${sep}${file.name}`.split('/')
-                    )
-                ).base
-            )
-        );
-        writeFileSync(
-            join(
-                ...`${file.parentPath
-                    .replaceAll('/', sep)
-                    .replace(
-                        join(process.cwd(), 'src', 'routes'),
-                        join(process.cwd(), 'src', 'build')
-                    )}${sep}${file.name}`.split('/')
-            ),
-
-            minified.code
-        );
+        console.log(path, existsSync(path));
+        writeFileSync(join(path, file.name), minified.code);
     }
 }
