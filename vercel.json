@@ -5,7 +5,7 @@
     "functions": {
         "api/index.js": {
             "includeFiles": "src/{**,**/*.{html,png,ico,webmanifest,svg,jpg,ttf,webp,css,json}",
-            "excludeFiles": "{.git,node_modules}/**"
+            "excludeFiles": "{.git,node_modules,src/routes/**}/**"
         }
     }
 }

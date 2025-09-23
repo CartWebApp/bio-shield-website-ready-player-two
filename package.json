@@ -6,9 +6,9 @@
     "type": "module",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "predev": "rollup --config rollup.config.js",
+        "predev": "rollup --config rollup.config.js && node ./src/server/build.js",
         "dev": "node -C development ./src/server/index.js",
-        "build": "rollup --config rollup.config.js"
+        "build": "rollup --config rollup.config.js && node ./src/server/build.js"
     },
     "repository": {
         "type": "git",
@@ -36,6 +36,7 @@
         "esm-env": "^1.2.2",
         "express": "^5.1.0",
         "kleur": "^4.1.5",
+        "lightningcss": "^1.30.1",
         "rollup": "^4.52.0",
         "terser": "^5.44.0",
         "valibot": "^1.1.0",
