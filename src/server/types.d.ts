@@ -42,7 +42,6 @@ export interface __RemoteFunctionRequestBody {
     argument: string;
     queries?: Array<{
         id: number;
-        key: string;
         argument: string;
     }>;
 }
@@ -53,7 +52,7 @@ export interface __RemoteFunctionResponseBody {
     result: string;
     error: string;
     queries?: Array<{
-        key: string;
+        id: number;
         argument: string;
         success: boolean;
         result: string;
