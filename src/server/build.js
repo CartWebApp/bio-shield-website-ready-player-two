@@ -100,6 +100,18 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
                         join(process.cwd(), 'src', 'routes'),
                         join(process.cwd(), 'src', 'build')
                     )}${sep}${file.name}`.split('/')
+            ),
+            existsSync(
+                parse(
+                    join(
+                        ...`${file.parentPath
+                            .replaceAll('/', sep)
+                            .replace(
+                                join(process.cwd(), 'src', 'routes'),
+                                join(process.cwd(), 'src', 'build')
+                            )}${sep}${file.name}`.split('/')
+                    )
+                ).base
             )
         );
         writeFileSync(
