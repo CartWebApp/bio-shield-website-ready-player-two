@@ -254,15 +254,15 @@ button {
         'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
         'Helvetica Neue', sans-serif;
     color: white;
-    background-color: #2229;
+    background-color: #222b;
     border: none;
     cursor: pointer;
     transition: background-color 0.3s ease;
     &:is(:focus, :active, :hover) {
-        background-color: #4449;
+        background-color: #444b;
     }
     &:disabled {
-        background-color: #5559;
+        background-color: #555b;
         color: #ccc;
         cursor: not-allowed;
     }
