@@ -22,6 +22,30 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
     if (!file.isFile()) {
         continue;
     }
+    if (
+        !existsSync(
+            join(
+                file.parentPath
+                    .replaceAll('/', sep)
+                    .replace(
+                        join(process.cwd(), 'src', 'routes'),
+                        join(process.cwd(), 'src', 'build')
+                    )
+            )
+        )
+    ) {
+        mkdirSync(
+            join(
+                file.parentPath
+                    .replaceAll('/', sep)
+                    .replace(
+                        join(process.cwd(), 'src', 'routes'),
+                        join(process.cwd(), 'src', 'build')
+                    )
+            ),
+            { recursive: true }
+        );
+    }
     const parsed = parse(file.name);
     if (
         (parsed.ext !== '.js' || file.name.endsWith('.remote.js')) &&
@@ -50,30 +74,6 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
         const minified = await minify(contents, {
             module: true
         });
-        if (
-            !existsSync(
-                join(
-                    file.parentPath
-                        .replaceAll('/', sep)
-                        .replace(
-                            join(process.cwd(), 'src', 'routes'),
-                            join(process.cwd(), 'src', 'build')
-                        )
-                )
-            )
-        ) {
-            mkdirSync(
-                join(
-                    file.parentPath
-                        .replaceAll('/', sep)
-                        .replace(
-                            join(process.cwd(), 'src', 'routes'),
-                            join(process.cwd(), 'src', 'build')
-                        )
-                ),
-                { recursive: true }
-            );
-        }
         writeFileSync(
             join(
                 ...`${file.parentPath
@@ -92,30 +92,16 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
             filename: join(file.parentPath, file.name),
             minify: true
         });
-        if (
-            !existsSync(
-                join(
-                    file.parentPath
-                        .replaceAll('/', sep)
-                        .replace(
-                            join(process.cwd(), 'src', 'routes'),
-                            join(process.cwd(), 'src', 'build')
-                        )
-                )
+        console.log(
+            join(
+                ...`${file.parentPath
+                    .replaceAll('/', sep)
+                    .replace(
+                        join(process.cwd(), 'src', 'routes'),
+                        join(process.cwd(), 'src', 'build')
+                    )}${sep}${file.name}`.split('/')
             )
-        ) {
-            mkdirSync(
-                join(
-                    file.parentPath
-                        .replaceAll('/', sep)
-                        .replace(
-                            join(process.cwd(), 'src', 'routes'),
-                            join(process.cwd(), 'src', 'build')
-                        )
-                ),
-                { recursive: true }
-            );
-        }
+        );
         writeFileSync(
             join(
                 ...`${file.parentPath

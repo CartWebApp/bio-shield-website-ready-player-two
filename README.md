@@ -126,10 +126,9 @@ export default function load(request) {
 
 While we don't offer many SSR methods, we have a small collection of primitives, available in the `insert` namespace found in the `#server` module. These allow you to (for example) set the title of the page in a `load` function, or use a templating syntax to render dynamic content on the server. Additionally, we provide an `element` helper that takes a tag, props, and children to return an HTML element as a string.
 
-
 ## Remote Functions
 
-Remote functions are an RPC feature (*very* much based on SvelteKit's [remote functions](https://svelte.dev/docs/kit/remote-functions)) that allow you to write functions that can be called on the client and execute on the server. This enables you to (for example) update a database from the client on the server in just a few lines of code. Here's an example.
+Remote functions are an RPC feature (_very_ much based on SvelteKit's [remote functions](https://svelte.dev/docs/kit/remote-functions)) that allow you to write functions that can be called on the client and execute on the server. This enables you to (for example) update a database from the client on the server in just a few lines of code. Here's an example.
 
 ```js
 // `src/routes/db.remote.js`
@@ -158,6 +157,7 @@ export const get_posts = query(v.number(), user_id => {
     return posts;
 });
 ```
+
 Here, we've declared a `command` and a `query`. A query allows you to read dynamic data from the server, while a command allows you to write data to the server. Both `query` and `command` accept one or two arguments: an optional schema that validates the arguments passed to the function, and the actual function. Then, on the client:
 
 ```js
@@ -176,4 +176,8 @@ create_post_button.addEventListener('click', async () => {
 ```
 
 > [!NOTE]
-> If you want a remote function to *not* validate its arguments, simply enter `'unchecked'` for the schema. **This is a security risk and not recommended. Remote functions are turned into public endpoints that may be called by anyone, *not* just your application.**
+> If you want a remote function to _not_ validate its arguments, simply enter `'unchecked'` for the schema. **This is a security risk and not recommended. Remote functions are turned into public endpoints that may be called by anyone, _not_ just your application.**
+
+## Build Step
+
+To improve performance, we provide a build step that minifies your JavaScript with [Terser](https://terser.org) and your CSS with [LightningCSS](https://lightningcss.dev). The built code is then put in `src/build`.
