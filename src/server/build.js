@@ -92,6 +92,30 @@ for (const file of readdirSync(join(process.cwd(), 'src', 'routes'), {
             filename: join(file.parentPath, file.name),
             minify: true
         });
+        if (
+            !existsSync(
+                join(
+                    file.parentPath
+                        .replaceAll('/', sep)
+                        .replace(
+                            join(process.cwd(), 'src', 'routes'),
+                            join(process.cwd(), 'src', 'build')
+                        )
+                )
+            )
+        ) {
+            mkdirSync(
+                join(
+                    file.parentPath
+                        .replaceAll('/', sep)
+                        .replace(
+                            join(process.cwd(), 'src', 'routes'),
+                            join(process.cwd(), 'src', 'build')
+                        )
+                ),
+                { recursive: true }
+            );
+        }
         writeFileSync(
             join(
                 ...`${file.parentPath
